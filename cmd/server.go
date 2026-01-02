@@ -1,7 +1,8 @@
 package main
 
-import "fmt"
+import "github.com/gngtwhh/WBlog/internal/app"
 
 func main() {
-	fmt.Println("Hello WBlog")
+	server := app.NewServer()
+	server.Run()
 }
