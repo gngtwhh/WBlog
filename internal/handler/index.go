@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/gngtwhh/WBlog/internal/render"
 )
 
 type IndexData struct {
@@ -19,4 +21,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonStr, _ := json.Marshal(data)
 	w.Write(jsonStr)
+}
+
+func IndexHtml(w http.ResponseWriter, r *http.Request) {
+	render.Execute(w, "index", nil)
 }

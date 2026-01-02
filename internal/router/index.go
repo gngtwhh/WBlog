@@ -8,4 +8,5 @@ import (
 
 func RegisterIndexRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /", handler.Index)
+	mux.HandleFunc("GET /index", handler.IndexHtml)
 }
