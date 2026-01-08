@@ -7,17 +7,31 @@
     </p>
 
     <section style="background: #f9f9f9; padding: 15px; border-radius: 5px">
-        <h3>最新文章</h3>
+        <h3>最新文章 ({{.Total}}篇)</h3>
+
         <ul>
-            <li>
-                <strong>第一篇博文 (预览)</strong><br />
-                <small>发布时间：2026-01-02</small>
-                <p>
-                    这是我学习 Go 语言的第一步，从原生 http 包开始探索 Web
-                    世界...
-                </p>
+            {{range .Posts}}
+            <li
+                style="
+                    margin-bottom: 20px;
+                    border-bottom: 1px dashed #ddd;
+                    padding-bottom: 10px;
+                "
+            >
+                <strong style="font-size: 1.2em">{{.Title}}</strong>
+                <br />
+
+                <small style="color: #666"
+                    >作者：{{.Author}} | 发布于：2026-01-08</small
+                >
+
+                <p style="margin: 5px 0">{{.Abstract}}</p>
+
                 <a href="#">阅读全文 &rarr;</a>
             </li>
+            {{else}}
+            <li>暂时没有文章发布。</li>
+            {{end}}
         </ul>
     </section>
 </main>

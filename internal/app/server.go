@@ -14,9 +14,8 @@ type Server struct {
 }
 
 func NewServer() (h *Server) {
-	// init render
 	tmpls := loadTmlps()
-	render.Init(tmpls)
+	render.Init(tmpls, "layout")
 
 	h = &Server{
 		server: http.Server{
@@ -35,9 +34,11 @@ func (s *Server) Run() {
 
 func loadTmlps() map[string]*template.Template {
 	tmpls := make(map[string]*template.Template)
-	base := "../web/templates/"
-	layout := base + "layout.html"
-	tmpls["index"] = template.Must(template.ParseFiles(layout, base+"index.html"))
+
+	baseDir := "../web/templates/"
+	layout := baseDir + "layout/layout.html"
+
+	tmpls["index"] = template.Must(template.ParseFiles(layout, baseDir+"index.html"))
 	// tmpls["layout"] = template.Must(template.ParseFiles("web/templates/layout.html"))
 	return tmpls
 }
