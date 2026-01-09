@@ -1,9 +1,21 @@
 package router
 
-import "net/http"
+import (
+	"net/http"
 
-func LoadRouters() (router *http.ServeMux) {
+	"github.com/gngtwhh/WBlog/internal/handler"
+)
+
+func LoadRouters(app *handler.App) (router *http.ServeMux) {
 	router = http.NewServeMux()
-	RegisterIndexRoutes(router)
+
+	// root and /index
+	// TODO: use app
+	router.HandleFunc("GET /", app.Index.Index)
+	router.HandleFunc("GET /index", app.Index.IndexHtml)
+
+	// article api
+	router.HandleFunc("GET /api/list-articles", app.Article.ListArticles)
+
 	return router
 }

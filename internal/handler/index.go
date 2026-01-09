@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gngtwhh/WBlog/internal/render"
+	"github.com/gngtwhh/WBlog/internal/service"
 )
 
 type IndexData struct {
@@ -20,9 +21,18 @@ type Article struct {
 	Abstract string
 }
 
+type IndexHandler struct {
+	articleSvc *service.ArticleService
+}
+
+func NewIndexHandler(svc *service.ArticleService) *IndexHandler {
+	return &IndexHandler{articleSvc: svc}
+}
+
 // Index returns a json data
-func Index(w http.ResponseWriter, r *http.Request) {
+func (h *IndexHandler) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	// TODO: configurable data
 	data := IndexData{
 		Title: "WBlog - A Simple Blog",
 		Desc:  "written in golang",
@@ -31,8 +41,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonStr)
 }
 
-func IndexHtml(w http.ResponseWriter, r *http.Request) {
-	// render.Execute(w, "index", nil)
+func (h *IndexHandler) IndexHtml(w http.ResponseWriter, r *http.Request) {
 	// TODO: test data to be removed
 	articles := []Article{
 		{
