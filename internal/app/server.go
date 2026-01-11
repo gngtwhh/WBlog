@@ -58,6 +58,7 @@ func loadTmlps() map[string]*template.Template {
 	layout := baseDir + "layout/layout.html"
 
 	tmpls["index"] = template.Must(template.ParseFiles(layout, baseDir+"index.html"))
+	tmpls["admin"] = template.Must(template.ParseFiles(layout, baseDir+"admin.html"))
 	// tmpls["layout"] = template.Must(template.ParseFiles("web/templates/layout.html"))
 	return tmpls
 }

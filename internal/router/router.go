@@ -14,13 +14,17 @@ func LoadRouters(app *handler.App) (router *http.ServeMux) {
 	router.HandleFunc("GET /", app.Index.Index)
 	router.HandleFunc("GET /index", app.Index.IndexHtml)
 
+	// /admin
+	router.HandleFunc("GET /admin", app.Index.Admin)
+
 	// article api
 	router.HandleFunc("GET /api/list-articles", app.Article.ListArticles)
 	router.HandleFunc("GET /api/articles-count", app.Article.Count)
 	router.HandleFunc("GET /api/get-article", app.Article.GetArticle)
-	router.HandleFunc("GET /api/create-article", app.Article.Create)
-	router.HandleFunc("GET /api/update-article", app.Article.Update)
-	router.HandleFunc("GET /api/delete-article", app.Article.Delete)
+
+	router.HandleFunc("POST /api/create-article", app.Article.Create)
+	router.HandleFunc("POST /api/update-article", app.Article.Update)
+	router.HandleFunc("DELETE /api/delete-article", app.Article.Delete)
 
 	return router
 }
