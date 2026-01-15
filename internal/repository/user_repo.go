@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/gngtwhh/WBlog/internal/model"
@@ -62,9 +61,9 @@ func (r *UserRepo) GetByUsername(username string) (*model.User, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return &model.User{}, errors.New("user not found")
+			return nil, nil
 		}
-		return &model.User{}, err
+		return nil, err
 	}
 	return user, nil
 }
@@ -90,9 +89,9 @@ func (r *UserRepo) GetByID(id uint64) (*model.User, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return &model.User{}, errors.New("user not found")
+			return nil, nil
 		}
-		return &model.User{}, err
+		return nil, err
 	}
 	return user, nil
 }

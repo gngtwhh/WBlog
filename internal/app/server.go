@@ -26,14 +26,17 @@ func NewServer() (h *Server) {
 		panic(err)
 	}
 	articleRepo := repository.NewArticleRepo(db)
+	userRepo := repository.NewUserRepo(db)
 
-	// init Service
+	// init Services
 	articleService := service.NewArticleService(articleRepo)
+	userService := service.NewUserService(userRepo)
 
 	// init handler
 	app := &handler.App{
 		Index:   handler.NewIndexHandler(articleService),
 		Article: handler.NewArticleHandler(articleService),
+		User:    handler.NewUserHandler(userService),
 	}
 
 	h = &Server{

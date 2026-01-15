@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gngtwhh/WBlog/internal/handler"
+	"github.com/gngtwhh/WBlog/internal/middleware"
 )
 
 func LoadRouters(app *handler.App) (router *http.ServeMux) {
@@ -25,6 +26,18 @@ func LoadRouters(app *handler.App) (router *http.ServeMux) {
 	router.HandleFunc("POST /api/create-article", app.Article.Create)
 	router.HandleFunc("POST /api/update-article", app.Article.Update)
 	router.HandleFunc("DELETE /api/delete-article", app.Article.Delete)
+
+	// user api
+	router.HandleFunc("GET /api/userinfo", app.User.GetUserInfo)
+	router.HandleFunc("POST /api/user/register", app.User.Register)
+	router.HandleFunc("POST /api/user/login", app.User.Login)
+	// authentication required
+	{
+		router.HandleFunc("GET /api/user/profile", middleware.Auth(app.User.GetProfile))
+		router.HandleFunc("POST /api/user/update", middleware.Auth(app.User.UpdateProfile))
+		router.HandleFunc("POST /api/user/update-password", middleware.Auth(app.User.UpdatePassword))
+		router.HandleFunc("POST /api/user/upload-avatar", middleware.Auth(app.User.UploadAvatar))
+	}
 
 	return router
 }

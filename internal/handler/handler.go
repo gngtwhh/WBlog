@@ -4,4 +4,5 @@ package handler
 type App struct {
 	Index   *IndexHandler
 	Article *ArticleHandler
+	User    *UserHandler
 }
