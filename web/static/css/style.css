@@ -1,0 +1,298 @@
+:root {
+    --primary-color: #49b1f5; /* Butterfly 主题蓝 */
+    --primary-hover: #ff7242; /* 悬停橘色 */
+    --text-color: #4c4948; /* 深灰字体 */
+    --card-bg: #fff; /* 卡片背景 */
+    --bg-color: #f7f9fe; /* 网页背景 */
+    --shadow: 0 3px 8px 6px rgba(7, 17, 27, 0.05);
+    --header-height: 60px;
+}
+
+body {
+    margin: 0;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Lato,
+        Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 2;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+}
+a:hover {
+    color: var(--primary-color);
+}
+
+/* --- 导航栏 --- */
+#nav-header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: var(--header-height);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 100;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    box-sizing: border-box;
+    transition: all 0.3s;
+}
+.nav-brand {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #333;
+}
+.nav-menus a {
+    margin-left: 20px;
+    font-size: 0.95rem;
+}
+.nav-menus a:hover {
+    color: var(--primary-color);
+}
+
+/* --- 顶部大图 Banner --- */
+.page-header {
+    height: 400px;
+    background-color: #49b1f5;
+    background-image: url("https://img.paulzzh.com/touhou/random?1"); /* 随机二次元背景 */
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    margin-bottom: -40px; /* 让内容卡片上浮 */
+}
+.site-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+    animation: titlescale 1s;
+}
+.post-meta {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+@keyframes titlescale {
+    0% {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* --- 主布局容器 --- */
+.layout-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* 左侧内容区 (75%) */
+.main-content {
+    flex: 1;
+    width: 0; /* 防止 flex 子项被内容撑破 */
+}
+
+/* 右侧侧边栏 (25%) */
+.aside-content {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+/* --- 卡片通用样式 --- */
+.card-widget {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 20px 25px;
+    margin-bottom: 20px;
+    transition: transform 0.3s;
+    animation: fadeInUp 0.6s;
+}
+.card-widget:hover {
+    box-shadow: 0 8px 12px -3px rgba(7, 17, 27, 0.1);
+}
+
+/* --- 首页文章列表项 --- */
+.post-item {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+}
+.post-item:hover {
+    transform: scale(1.01);
+}
+
+.post-info {
+    padding: 30px 40px;
+}
+.post-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: block;
+    line-height: 1.3;
+}
+.post-meta-data {
+    color: #858585;
+    font-size: 90%;
+    margin-bottom: 15px;
+}
+.post-content-preview {
+    color: #666;
+    font-size: 0.95rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+/* --- 文章详情页 --- */
+.article-container {
+    padding: 40px 50px;
+}
+.article-container h1 {
+    font-size: 2em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.article-container h2 {
+    font-size: 1.5em;
+    margin: 20px 0 15px;
+    padding-left: 10px;
+    border-left: 5px solid var(--primary-color);
+}
+.article-container h3 {
+    font-size: 1.3em;
+    margin: 20px 0;
+}
+.article-container p {
+    margin: 0 0 16px;
+}
+.article-container img {
+    max-width: 100%;
+    border-radius: 4px;
+    display: block;
+    margin: 10px auto;
+}
+.article-container blockquote {
+    border-left: 4px solid var(--primary-color);
+    background: #f8f8f8;
+    margin: 10px 0;
+    padding: 10px 15px;
+    color: #666;
+}
+
+/* 代码块样式修正 */
+.article-container pre {
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    color: #dcdcdc;
+    font-family: consolas, monospace;
+}
+.article-container code:not(pre code) {
+    background: #fdfdfd;
+    color: #c0392b;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid #eee;
+    margin: 0 2px;
+}
+
+/* --- 侧边栏 --- */
+.author-info {
+    text-align: center;
+}
+.author-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    transition: transform 0.5s;
+    margin: 10px auto;
+    display: block;
+}
+.author-avatar:hover {
+    transform: rotate(360deg);
+}
+.author-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin: 10px 0 5px;
+}
+.site-data {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 20px;
+    table-layout: fixed;
+}
+.site-data-item {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+}
+.site-data-item .key {
+    font-size: 0.9rem;
+    color: #888;
+}
+.site-data-item .count {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- 响应式 --- */
+@media (max-width: 900px) {
+    .layout-container {
+        flex-direction: column;
+    }
+    .main-content {
+        width: 100%;
+    }
+    .aside-content {
+        width: 100%;
+    }
+    .page-header {
+        height: 280px;
+    }
+    .site-title {
+        font-size: 1.8rem;
+    }
+}

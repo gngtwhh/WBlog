@@ -1,38 +1,119 @@
 {{define "content"}}
-<main>
-    <h2>欢迎来到我的首页</h2>
-    <p>
-        这是一个使用原生 Go
-        语言开发的博客项目。目前后端正在努力开发中，敬请期待！
+<header class="page-header">
+    <h1 class="site-title">WAHAHA's Blog</h1>
+    <p class="post-meta">
+        <i class="fa-solid fa-code"></i> 聪明出于勤奋，天才在于积累。
     </p>
+</header>
 
-    <section style="background: #f9f9f9; padding: 15px; border-radius: 5px">
-        <h3>最新文章 ({{.Total}}篇)</h3>
+<div class="layout-container">
+    <div class="main-content" id="article-list">
+        <div class="card-widget" style="text-align: center; padding: 50px">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 10px">正在加载文章...</p>
+        </div>
+    </div>
 
-        <ul>
-            {{range .Posts}}
-            <li
-                style="
-                    margin-bottom: 20px;
-                    border-bottom: 1px dashed #ddd;
-                    padding-bottom: 10px;
-                "
-            >
-                <strong style="font-size: 1.2em">{{.Title}}</strong>
-                <br />
+    <aside class="aside-content">
+        <div class="card-widget author-info">
+            <img
+                src="https://c-ssl.dtstatic.com/uploads/blog/202206/26/20220626153723_a6d45.thumb.1000_0.jpeg"
+                class="author-avatar"
+                alt="Avatar"
+            />
+            <div class="author-name">WAHAHA</div>
+            <p style="font-size: 0.9rem; color: #666">一个爱折腾的蒟蒻</p>
 
-                <small style="color: #666"
-                    >作者：{{.Author}} | 发布于：2026-01-08</small
-                >
+            <div class="site-data">
+                <div class="site-data-item">
+                    <div class="key">文章</div>
+                    <div class="count" id="total-articles">-</div>
+                </div>
+                <div class="site-data-item">
+                    <div class="key">标签</div>
+                    <div class="count">N/A</div>
+                </div>
+                <div class="site-data-item">
+                    <div class="key">分类</div>
+                    <div class="count">N/A</div>
+                </div>
+            </div>
 
-                <p style="margin: 5px 0">{{.Abstract}}</p>
+            <div style="margin-top: 15px; font-size: 1.2rem">
+                <a href="#" style="margin: 0 10px"
+                    ><i class="fa-brands fa-github"></i
+                ></a>
+                <a href="#" style="margin: 0 10px; color: #1da1f2"
+                    ><i class="fa-brands fa-twitter"></i
+                ></a>
+            </div>
+        </div>
 
-                <a href="#">阅读全文 &rarr;</a>
-            </li>
-            {{else}}
-            <li>暂时没有文章发布。</li>
-            {{end}}
-        </ul>
-    </section>
-</main>
+        <div class="card-widget">
+            <div style="font-weight: bold; margin-bottom: 10px">
+                <i class="fa-solid fa-bullhorn" style="color: #f00"></i> 公告
+            </div>
+            <div style="font-size: 0.9rem">欢迎访问我的博客！正在施工中。</div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadArticles();
+        loadSiteStats();
+    });
+
+    async function loadArticles() {
+        try {
+            // 请求第一页数据
+            const res = await fetch("/api/list-articles?page=1&pagesize=10");
+            const articles = await res.json();
+            const container = document.getElementById("article-list");
+            container.innerHTML = "";
+
+            if (!articles || articles.length === 0) {
+                container.innerHTML = '<div class="card-widget">暂无文章</div>';
+                return;
+            }
+
+            articles.forEach((article) => {
+                // 截取摘要
+                const abstract =
+                    article.abstract ||
+                    article.content.substring(0, 120).replace(/[#*`]/g, "") +
+                        "...";
+
+                // 渲染卡片
+                const html = `
+                    <div class="card-widget post-item">
+                        <div class="post-info">
+                            <a href="/article/${article.id}" class="post-title">${article.title}</a>
+                            <div class="post-meta-data">
+                                <span style="margin-right: 10px;"><i class="fa-regular fa-calendar-check"></i> ${article.created_at.substring(0, 10)}</span>
+                                <span><i class="fa-regular fa-eye"></i> ${article.view_count || 0} 热度</span>
+                            </div>
+                            <div class="post-content-preview">${abstract}</div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML("beforeend", html);
+            });
+        } catch (err) {
+            console.error(err);
+            document.getElementById("article-list").innerHTML =
+                `<div class="card-widget">加载失败: ${err.message}</div>`;
+        }
+    }
+
+    async function loadSiteStats() {
+        try {
+            const res = await fetch("/api/articles-count");
+            const count = await res.json();
+            document.getElementById("total-articles").innerText = count;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+</script>
 {{end}}

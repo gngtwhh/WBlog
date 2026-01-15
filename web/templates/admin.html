@@ -1,347 +1,446 @@
 {{define "content"}}
-<main>
-    <div
-        style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        "
-    >
-        <h2>文章管理后台</h2>
-        <button
-            onclick="resetForm()"
-            style="
-                background-color: #28a745;
-                color: white;
-                border: none;
-                padding: 10px 15px;
-                cursor: pointer;
-                border-radius: 4px;
-            "
-        >
-            + 写新文章
-        </button>
-    </div>
+<header
+    class="page-header"
+    style="
+        height: 300px;
+        background-image: url(&quot;https://img.paulzzh.com/touhou/random?admin&quot;);
+    "
+>
+    <h1 class="site-title">后台管理系统</h1>
+    <p class="post-meta">
+        <i class="fa-solid fa-gear"></i> Manage your content efficiently
+    </p>
+</header>
 
-    <div
-        id="status-bar"
-        style="
-            display: none;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        "
-    ></div>
-
-    <div style="display: flex; gap: 20px; flex-wrap: wrap">
-        <section
-            style="
-                flex: 1;
-                min-width: 300px;
-                background: #fff;
-                border: 1px solid #eee;
-                padding: 15px;
-                border-radius: 5px;
-            "
-        >
-            <h3>文章列表 (共 <span id="total-count">0</span> 篇)</h3>
-            <table style="width: 100%; border-collapse: collapse">
-                <thead>
-                    <tr style="background: #f9f9f9; text-align: left">
-                        <th style="padding: 8px">ID</th>
-                        <th style="padding: 8px">标题</th>
-                        <th style="padding: 8px">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="article-list-body">
-                    <tr>
-                        <td colspan="3">加载中...</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style="margin-top: 10px; text-align: center">
-                <button onclick="prevPage()">上一页</button>
-                <span id="current-page">1</span>
-                <button onclick="nextPage()">下一页</button>
-            </div>
-        </section>
-
-        <section
-            style="
-                flex: 1;
-                min-width: 300px;
-                background: #fdfdfd;
-                border: 1px solid #ddd;
-                padding: 15px;
-                border-radius: 5px;
-            "
-        >
-            <h3 id="form-title">撰写文章</h3>
-            <form id="article-form" onsubmit="handleFormSubmit(event)">
-                <input type="hidden" id="article-id" value="0" />
-
-                <div style="margin-bottom: 15px">
-                    <label style="display: block; margin-bottom: 5px"
-                        >标题:</label
-                    >
-                    <input
-                        type="text"
-                        id="title"
-                        required
-                        style="
-                            width: 100%;
-                            padding: 8px;
-                            box-sizing: border-box;
-                        "
-                    />
-                </div>
-
-                <div style="margin-bottom: 15px">
-                    <label style="display: block; margin-bottom: 5px"
-                        >作者:</label
-                    >
-                    <input
-                        type="text"
-                        id="author"
-                        required
-                        style="
-                            width: 100%;
-                            padding: 8px;
-                            box-sizing: border-box;
-                        "
-                    />
-                </div>
-
-                <div style="margin-bottom: 15px">
-                    <label style="display: block; margin-bottom: 5px"
-                        >摘要:</label
-                    >
-                    <textarea
-                        id="abstract"
-                        rows="3"
-                        style="
-                            width: 100%;
-                            padding: 8px;
-                            box-sizing: border-box;
-                        "
-                    ></textarea>
-                </div>
-
-                <div style="margin-bottom: 15px">
-                    <label style="display: block; margin-bottom: 5px"
-                        >正文内容 (支持 Markdown):</label
-                    >
-                    <textarea
-                        id="content"
-                        required
-                        rows="10"
-                        style="
-                            width: 100%;
-                            padding: 8px;
-                            box-sizing: border-box;
-                            font-family: monospace;
-                        "
-                    ></textarea>
-                </div>
-
-                <button
-                    type="submit"
-                    style="
-                        background-color: #007bff;
-                        color: white;
-                        border: none;
-                        padding: 10px 20px;
-                        cursor: pointer;
-                        border-radius: 4px;
-                        width: 100%;
-                    "
-                >
-                    保存文章
+<div class="layout-container" style="flex-direction: column; max-width: 1400px">
+    <div id="view-list" class="main-content" style="width: 100%">
+        <div class="card-widget">
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                "
+            >
+                <h2 style="margin: 0; border: none; font-size: 1.5rem">
+                    <i class="fa-solid fa-list"></i> 文章列表
+                </h2>
+                <button class="btn btn-primary" onclick="showEditor()">
+                    <i class="fa-solid fa-plus"></i> 新建文章
                 </button>
-            </form>
-        </section>
+            </div>
+
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th width="50">ID</th>
+                            <th>标题</th>
+                            <th width="150">作者</th>
+                            <th width="150">发布时间</th>
+                            <th width="100">浏览量</th>
+                            <th width="150">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="article-table-body"></tbody>
+                </table>
+                <div
+                    id="loading-tip"
+                    style="text-align: center; padding: 20px; color: #999"
+                >
+                    <i class="fa-solid fa-spinner fa-spin"></i> 加载中...
+                </div>
+            </div>
+        </div>
     </div>
-</main>
+
+    <div
+        id="view-editor"
+        class="main-content"
+        style="width: 100%; display: none"
+    >
+        <div class="card-widget">
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 15px;
+                "
+            >
+                <h2
+                    style="margin: 0; border: none; font-size: 1.5rem"
+                    id="editor-title"
+                >
+                    新建文章
+                </h2>
+                <div>
+                    <button class="btn btn-secondary" onclick="hideEditor()">
+                        取消
+                    </button>
+                    <button class="btn btn-primary" onclick="saveArticle()">
+                        <i class="fa-solid fa-save"></i> 保存发布
+                    </button>
+                </div>
+            </div>
+
+            <input type="hidden" id="edit-id" />
+
+            <div class="form-group">
+                <input
+                    type="text"
+                    id="edit-title"
+                    class="form-control title-input"
+                    placeholder="在此输入文章标题..."
+                />
+            </div>
+
+            <div class="form-group">
+                <input
+                    type="text"
+                    id="edit-author"
+                    class="form-control"
+                    placeholder="作者 (例如: WAHAHA)"
+                    value="WAHAHA"
+                />
+            </div>
+
+            <div class="form-group">
+                <textarea
+                    id="edit-abstract"
+                    class="form-control"
+                    rows="3"
+                    placeholder="文章摘要 (选填，留空则自动截取正文)"
+                ></textarea>
+            </div>
+
+            <div class="editor-container">
+                <div class="editor-pane">
+                    <textarea
+                        id="edit-content"
+                        class="markdown-textarea"
+                        placeholder="开始使用 Markdown 写作..."
+                    ></textarea>
+                </div>
+                <div class="preview-pane">
+                    <div
+                        id="markdown-preview"
+                        class="article-container"
+                        style="padding: 10px"
+                    ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 按钮样式 */
+    .btn {
+        padding: 8px 20px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        color: #fff;
+    }
+    .btn-primary {
+        background: var(--primary-color);
+    }
+    .btn-primary:hover {
+        background: #ff7242;
+        box-shadow: 0 4px 10px rgba(255, 114, 66, 0.3);
+    }
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #666;
+        margin-right: 10px;
+    }
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+    .btn-danger {
+        background: #ff4d4f;
+        padding: 5px 10px;
+        font-size: 0.85rem;
+    }
+    .btn-edit {
+        background: #49b1f5;
+        padding: 5px 10px;
+        font-size: 0.85rem;
+        margin-right: 5px;
+    }
+
+    /* 表格样式 */
+    .table-container {
+        overflow-x: auto;
+    }
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .admin-table th {
+        text-align: left;
+        padding: 15px;
+        background: #f9f9f9;
+        color: #666;
+        font-weight: bold;
+        border-bottom: 2px solid #eee;
+    }
+    .admin-table td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        color: #444;
+    }
+    .admin-table tr:hover {
+        background: #fdfdfd;
+    }
+
+    /* 表单样式 */
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 1rem;
+        outline: none;
+        transition: border 0.3s;
+        background: #fdfdfd;
+    }
+    .form-control:focus {
+        border-color: var(--primary-color);
+        background: #fff;
+    }
+    .title-input {
+        font-size: 1.5rem;
+        font-weight: bold;
+        height: 50px;
+    }
+
+    /* 编辑器分栏布局 */
+    .editor-container {
+        display: flex;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 20px;
+    }
+    .editor-pane,
+    .preview-pane {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .editor-pane {
+        border-right: 1px solid #ddd;
+        background: #fcfcfc;
+    }
+    .markdown-textarea {
+        width: 100%;
+        height: 100%;
+        border: none;
+        resize: none;
+        padding: 20px;
+        box-sizing: border-box;
+        font-family: "Consolas", monospace;
+        font-size: 1rem;
+        line-height: 1.6;
+        outline: none;
+        background: transparent;
+    }
+    .preview-pane {
+        background: #fff;
+    }
+</style>
 
 <script>
-    // 全局变量
-    let currentPage = 1;
-    const pageSize = 10;
-
-    // 页面加载完成后立即获取列表
     document.addEventListener("DOMContentLoaded", () => {
-        loadArticles();
-        loadCount();
+        loadList(); // 初始加载列表
+
+        // 绑定 Markdown 实时预览
+        const textarea = document.getElementById("edit-content");
+        textarea.addEventListener("input", (e) => {
+            renderPreview(e.target.value);
+        });
     });
 
-    // --- API 调用函数 ---
+    // 配置 Marked
+    marked.setOptions({
+        highlight: function (code, lang) {
+            const language = highlight.getLanguage(lang) ? lang : "plaintext";
+            return highlight.highlight(code, { language }).value;
+        },
+        breaks: true,
+        gfm: true,
+    });
 
-    // 1. 测试 ListArticles API
-    async function loadArticles() {
-        const tbody = document.getElementById("article-list-body");
-        tbody.innerHTML = '<tr><td colspan="3">加载中...</td></tr>';
+    // --- 视图切换逻辑 ---
+    function showEditor(article = null) {
+        document.getElementById("view-list").style.display = "none";
+        document.getElementById("view-editor").style.display = "block";
 
+        if (article) {
+            // 编辑模式
+            document.getElementById("editor-title").innerText = "编辑文章";
+            document.getElementById("edit-id").value = article.id;
+            document.getElementById("edit-title").value = article.title;
+            document.getElementById("edit-author").value = article.author;
+            document.getElementById("edit-abstract").value = article.abstract;
+            document.getElementById("edit-content").value = article.content;
+            renderPreview(article.content);
+        } else {
+            // 新建模式 - 清空表单
+            document.getElementById("editor-title").innerText = "新建文章";
+            document.getElementById("edit-id").value = "";
+            document.getElementById("edit-title").value = "";
+            document.getElementById("edit-abstract").value = "";
+            document.getElementById("edit-content").value = "";
+            renderPreview("");
+        }
+    }
+
+    function hideEditor() {
+        document.getElementById("view-editor").style.display = "none";
+        document.getElementById("view-list").style.display = "block";
+    }
+
+    function renderPreview(markdown) {
+        document.getElementById("markdown-preview").innerHTML =
+            marked.parse(markdown);
+    }
+
+    // --- API 交互 ---
+
+    // 1. 加载列表
+    async function loadList() {
         try {
-            const res = await fetch(
-                `/api/list-articles?page=${currentPage}&pagesize=${pageSize}`,
-            );
-            const data = await res.json();
+            const res = await fetch("/api/list-articles?page=1&pagesize=100"); // 简单起见，一次拉100条
+            const list = await res.json();
 
+            const tbody = document.getElementById("article-table-body");
             tbody.innerHTML = "";
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>';
+            document.getElementById("loading-tip").style.display = "none";
+
+            if (!list || list.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="6" style="text-align:center">暂无数据</td></tr>';
                 return;
             }
 
-            data.forEach((article) => {
+            list.forEach((item) => {
                 const tr = document.createElement("tr");
-                tr.style.borderBottom = "1px solid #eee";
                 tr.innerHTML = `
-                    <td style="padding: 8px;">${article.id}</td>
-                    <td style="padding: 8px;">${article.title}</td>
-                    <td style="padding: 8px;">
-                        <button onclick="editArticle(${article.id})" style="color: blue; cursor: pointer; margin-right: 5px;">编辑</button>
-                        <button onclick="deleteArticle(${article.id})" style="color: red; cursor: pointer;">删除</button>
+                    <td>${item.id}</td>
+                    <td><a href="/article/${item.id}" target="_blank" style="font-weight:bold;">${item.title}</a></td>
+                    <td>${item.author}</td>
+                    <td>${item.created_at.substring(0, 10)}</td>
+                    <td>${item.view_count}</td>
+                    <td>
+                        <button class="btn btn-edit" onclick='fetchDetailAndEdit(${item.id})'><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-danger" onclick="deleteArticle(${item.id})"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById("current-page").innerText = currentPage;
-        } catch (err) {
-            showStatus("加载列表失败: " + err, "error");
+        } catch (e) {
+            console.error(e);
+            alert("加载失败");
         }
     }
 
-    // 2. 测试 Count API
-    async function loadCount() {
-        try {
-            const res = await fetch("/api/articles-count");
-            const count = await res.json();
-            document.getElementById("total-count").innerText = count;
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    // 3. 测试 GetArticle API (点击编辑时)
-    async function editArticle(id) {
+    // 2. 获取详情并进入编辑 (因为列表数据可能不全，或者为了保险起见重新拉取)
+    async function fetchDetailAndEdit(id) {
         try {
             const res = await fetch(`/api/get-article?id=${id}`);
-            if (!res.ok) throw new Error("获取文章失败");
             const article = await res.json();
-
-            // 填充表单
-            document.getElementById("article-id").value = article.id;
-            document.getElementById("title").value = article.title;
-            document.getElementById("author").value = article.author;
-            document.getElementById("abstract").value = article.abstract;
-            document.getElementById("content").value = article.content;
-
-            // 更改 UI 状态
-            document.getElementById("form-title").innerText =
-                `编辑文章 (ID: ${article.id})`;
-            showStatus("已载入文章数据", "success");
-        } catch (err) {
-            showStatus(err.message, "error");
+            showEditor(article);
+        } catch (e) {
+            alert("获取详情失败");
         }
     }
 
-    // 4. 测试 Delete API
-    async function deleteArticle(id) {
-        if (!confirm("确定要删除 ID 为 " + id + " 的文章吗？")) return;
+    // 3. 保存 (新增或更新)
+    async function saveArticle() {
+        const id = document.getElementById("edit-id").value;
+        const title = document.getElementById("edit-title").value;
+        const content = document.getElementById("edit-content").value;
+        const author = document.getElementById("edit-author").value;
+        const abstract = document.getElementById("edit-abstract").value;
 
-        try {
-            const res = await fetch(`/api/delete-article?id=${id}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) throw new Error("删除失败");
-
-            showStatus("删除成功", "success");
-            loadArticles(); // 刷新列表
-            loadCount(); // 刷新总数
-        } catch (err) {
-            showStatus(err.message, "error");
+        if (!title || !content) {
+            alert("标题和内容不能为空");
+            return;
         }
-    }
 
-    // 5. 测试 Create 和 Update API (提交表单时)
-    async function handleFormSubmit(e) {
-        e.preventDefault();
-
-        const id = parseInt(document.getElementById("article-id").value);
         const data = {
-            title: document.getElementById("title").value,
-            author: document.getElementById("author").value,
-            abstract: document.getElementById("abstract").value,
-            content: document.getElementById("content").value,
+            title,
+            content,
+            author,
+            abstract,
         };
 
         let url = "/api/create-article";
-        let method = "POST"; // 必须是 POST
+        let method = "POST"; // create 接口是 POST
 
-        // 如果 ID > 0，说明是更新模式
-        if (id > 0) {
+        // 如果有 ID，则是更新
+        if (id) {
             url = "/api/update-article";
-            data.id = id; // Update 需要传 ID
+            data.id = parseInt(id); // 后端需要 uint64
         }
 
         try {
             const res = await fetch(url, {
                 method: method,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    // 'Authorization': 'Bearer ...' // 未来鉴权时开启
+                },
                 body: JSON.stringify(data),
             });
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || "操作失败");
+            if (res.ok) {
+                alert("保存成功");
+                hideEditor();
+                loadList(); // 刷新列表
+            } else {
+                const err = await res.text();
+                alert("保存失败: " + err);
             }
-
-            const resultId = await res.json();
-            showStatus(`保存成功! ID: ${resultId}`, "success");
-
-            resetForm(); // 清空表单
-            loadArticles(); // 刷新列表
-            loadCount();
-        } catch (err) {
-            showStatus("保存失败: " + err.message, "error");
+        } catch (e) {
+            console.error(e);
+            alert("网络错误");
         }
     }
 
-    // --- 辅助函数 ---
+    // 4. 删除
+    async function deleteArticle(id) {
+        if (!confirm("确定要删除这篇文章吗？此操作不可恢复。")) return;
 
-    function resetForm() {
-        document.getElementById("article-form").reset();
-        document.getElementById("article-id").value = 0;
-        document.getElementById("form-title").innerText = "撰写新文章";
-    }
+        try {
+            // 为了兼容性，用 fetch 传 query param，并在 body 里也传一下
+            const res = await fetch(`/api/delete-article?id=${id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: parseInt(id) }),
+            });
 
-    function prevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            loadArticles();
+            if (res.ok) {
+                // alert('删除成功'); // 体验更好可以不弹窗
+                loadList();
+            } else {
+                alert("删除失败");
+            }
+        } catch (e) {
+            alert("网络错误");
         }
-    }
-
-    function nextPage() {
-        currentPage++;
-        loadArticles();
-    }
-
-    function showStatus(msg, type) {
-        const el = document.getElementById("status-bar");
-        el.style.display = "block";
-        el.innerText = msg;
-        if (type === "error") {
-            el.style.background = "#f8d7da";
-            el.style.color = "#721c24";
-        } else {
-            el.style.background = "#d4edda";
-            el.style.color = "#155724";
-        }
-        setTimeout(() => {
-            el.style.display = "none";
-        }, 3000);
     }
 </script>
 {{end}}

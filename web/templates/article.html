@@ -1,0 +1,127 @@
+{{define "content"}}
+<header class="page-header" id="post-header" style="height: 350px">
+    <h1 class="site-title" id="art-title">Loading...</h1>
+    <div class="post-meta" id="art-meta">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+    </div>
+</header>
+
+<div class="layout-container">
+    <div class="main-content">
+        <div class="card-widget article-container">
+            <div id="art-content"></div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0" />
+
+            <div
+                style="
+                    background: #f9f9f9;
+                    padding: 15px;
+                    border-left: 5px solid var(--primary-color);
+                    border-radius: 4px;
+                "
+            >
+                <strong>版权声明：</strong> 本文为博主原创文章，遵循
+                <a
+                    href="https://creativecommons.org/licenses/by-sa/4.0/"
+                    target="_blank"
+                    >CC 4.0 BY-SA</a
+                >
+                版权协议，转载请附上原文出处链接和本声明。
+            </div>
+        </div>
+    </div>
+
+    <aside class="aside-content">
+        <div class="card-widget">
+            <div style="font-weight: bold; margin-bottom: 10px">
+                <i class="fa-solid fa-list-ul"></i> 目录
+            </div>
+            <p style="color: #ccc; font-size: 0.9rem">
+                (自动生成目录开发中...)
+            </p>
+        </div>
+
+        <div class="card-widget">
+            <div style="font-weight: bold; margin-bottom: 10px">
+                <i class="fa-solid fa-history"></i> 最新发布
+            </div>
+            <div style="font-size: 0.9rem; color: #666">等待 API 接入...</div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1. 从 URL 路径获取 ID: /article/12 -> 12
+        const pathSegments = window.location.pathname.split("/");
+        const id = pathSegments.filter((s) => s).pop();
+
+        if (id && !isNaN(id)) {
+            loadArticleDetail(id);
+        } else {
+            showError("无效的文章链接");
+        }
+    });
+
+    async function loadArticleDetail(id) {
+        try {
+            // 调用 API (注意 API 依然使用 Query 参数)
+            const res = await fetch(`/api/get-article?id=${id}`);
+
+            if (!res.ok) throw new Error("Article not found or API error");
+
+            const article = await res.json();
+
+            // 1. 设置头部信息
+            document.getElementById("art-title").innerText = article.title;
+            // 动态设置不同的背景图
+            const bgUrl = `https://img.paulzzh.com/touhou/random?${article.id}`;
+            document.getElementById("post-header").style.backgroundImage =
+                `url('${bgUrl}')`;
+
+            document.getElementById("art-meta").innerHTML = `
+                <span><i class="fa-regular fa-calendar"></i> ${article.created_at.substring(0, 10)}</span>
+                <span style="margin: 0 10px">|</span>
+                <span><i class="fa-regular fa-user"></i> ${article.author}</span>
+                <span style="margin: 0 10px">|</span>
+                <span><i class="fa-regular fa-eye"></i> ${article.view_count} 阅读</span>
+            `;
+
+            // 设置网页标题
+            document.title = `${article.title} - WBlog`;
+
+            // 2. 渲染 Markdown
+            marked.setOptions({
+                highlight: function (code, lang) {
+                    const language = highlight.getLanguage(lang)
+                        ? lang
+                        : "plaintext";
+                    return highlight.highlight(code, { language }).value;
+                },
+                langPrefix: "hljs language-",
+                breaks: true,
+                gfm: true,
+            });
+
+            document.getElementById("art-content").innerHTML = marked.parse(
+                article.content,
+            );
+        } catch (err) {
+            showError(err.message);
+        }
+    }
+
+    function showError(msg) {
+        document.getElementById("art-title").innerText = "404";
+        document.getElementById("art-meta").innerText = "";
+        document.getElementById("art-content").innerHTML = `
+            <div style="text-align: center; color: #ccc; padding: 40px;">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+                <p style="margin-top: 20px;">${msg}</p>
+                <a href="/" style="color: var(--primary-color);">返回首页</a>
+            </div>
+        `;
+    }
+</script>
+{{end}}

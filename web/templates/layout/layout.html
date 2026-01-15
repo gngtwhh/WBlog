@@ -4,49 +4,44 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>我的原生 Go 博客</title>
-        <style>
-            body {
-                font-family: sans-serif;
-                line-height: 1.6;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 20px;
-                color: #333;
-            }
-            header {
-                border-bottom: 2px solid #eee;
-                padding-bottom: 10px;
-                margin-bottom: 20px;
-            }
-            nav a {
-                margin-right: 15px;
-                text-decoration: none;
-                color: #007bff;
-            }
-            footer {
-                margin-top: 50px;
-                font-size: 0.8em;
-                color: #777;
-                border-top: 1px solid #eee;
-                padding-top: 10px;
-            }
-        </style>
+        <title>{{.Title}} - WBlog</title>
+        <link rel="stylesheet" href="/static/css/style.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"
+        />
     </head>
     <body>
-        <header>
-            <h1>我的博客</h1>
-            <nav>
-                <a href="/">首页</a>
-                <a href="/about">关于</a>
-            </nav>
-        </header>
+        <nav id="nav-header">
+            <a href="/" class="nav-brand">
+                <i class="fa-solid fa-paper-plane"></i> WAHAHA's Blog
+            </a>
+            <div class="nav-menus">
+                <a href="/"><i class="fa-solid fa-home"></i> 首页</a>
+                <a href="/archive"><i class="fa-solid fa-archive"></i> 归档</a>
+                <a href="/admin"><i class="fa-solid fa-cog"></i> 后台</a>
+            </div>
+        </nav>
 
         {{template "content" .}}
 
-        <footer>
-            <p>&copy; 2026 Powered by Go Native http Server</p>
+        <footer
+            style="
+                text-align: center;
+                padding: 40px 0;
+                color: #888;
+                background: linear-gradient(to top, #fff, var(--bg-color));
+            "
+        >
+            <p>&copy; 2026 WBlog | Powered by Go & Vanilla JS</p>
         </footer>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     </body>
 </html>
 {{end}}

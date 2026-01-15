@@ -10,6 +10,9 @@ import (
 func LoadRouters(app *handler.App) (router *http.ServeMux) {
 	router = http.NewServeMux()
 
+	// static resources
+	router.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../web/static"))))
+
 	// root and /index
 	// TODO: use app
 	router.HandleFunc("GET /", app.Index.Index)
@@ -17,6 +20,9 @@ func LoadRouters(app *handler.App) (router *http.ServeMux) {
 
 	// /admin
 	router.HandleFunc("GET /admin", app.Index.Admin)
+
+	// article page
+	router.HandleFunc("GET /article/{id}", app.Index.ArticlePage)
 
 	// article api
 	router.HandleFunc("GET /api/list-articles", app.Article.ListArticles)
