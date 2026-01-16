@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/gngtwhh/WBlog/internal/model"
@@ -11,10 +12,14 @@ import (
 
 type UserService struct {
 	repo repository.UserRepository
+	log  *slog.Logger
 }
 
-func NewUserService(repo repository.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repository.UserRepository, logger *slog.Logger) *UserService {
+	return &UserService{
+		repo: repo,
+		log:  logger.With("component", "user_service"),
+	}
 }
 
 func (svc *UserService) Register(user *model.User) error {

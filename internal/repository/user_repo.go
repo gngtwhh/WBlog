@@ -3,17 +3,22 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/gngtwhh/WBlog/internal/model"
 )
 
 // UserRepo implements the repository.UserRepository interface.
 type UserRepo struct {
-	db *sql.DB
+	db  *sql.DB
+	log *slog.Logger
 }
 
-func NewUserRepo(db *sql.DB) *UserRepo {
-	return &UserRepo{db: db}
+func NewUserRepo(db *sql.DB, log *slog.Logger) *UserRepo {
+	return &UserRepo{
+		db:  db,
+		log: log.With("component", "user_repo"),
+	}
 }
 
 func (r *UserRepo) Create(user *model.User) error {

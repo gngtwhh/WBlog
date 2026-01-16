@@ -1,16 +1,22 @@
 package service
 
 import (
+	"log/slog"
+
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/repository"
 )
 
 type ArticleService struct {
 	repo repository.ArticleRepository
+	log  *slog.Logger
 }
 
-func NewArticleService(repo repository.ArticleRepository) *ArticleService {
-	return &ArticleService{repo: repo}
+func NewArticleService(repo repository.ArticleRepository, logger *slog.Logger) *ArticleService {
+	return &ArticleService{
+		repo: repo,
+		log:  logger,
+	}
 }
 
 func (svc *ArticleService) ListArticles(limit, offset int) ([]model.Article, error) {

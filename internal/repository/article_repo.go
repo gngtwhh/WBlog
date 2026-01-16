@@ -4,17 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/gngtwhh/WBlog/internal/model"
 )
 
 // ArticleRepo implements the repository.ArticleRepository interface.
 type ArticleRepo struct {
-	db *sql.DB
+	db  *sql.DB
+	log *slog.Logger
 }
 
-func NewArticleRepo(db *sql.DB) *ArticleRepo {
-	return &ArticleRepo{db: db}
+func NewArticleRepo(db *sql.DB, log *slog.Logger) *ArticleRepo {
+	return &ArticleRepo{
+		db:  db,
+		log: log.With("component", "article_repo"),
+	}
 }
 
 // Create inserts a new article into the database.

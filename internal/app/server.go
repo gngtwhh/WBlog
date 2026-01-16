@@ -3,6 +3,7 @@ package app
 import (
 	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gngtwhh/WBlog/internal/handler"
@@ -10,6 +11,7 @@ import (
 	"github.com/gngtwhh/WBlog/internal/repository"
 	"github.com/gngtwhh/WBlog/internal/router"
 	"github.com/gngtwhh/WBlog/internal/service"
+	"github.com/gngtwhh/WBlog/pkg/logger"
 )
 
 type Server struct {
@@ -17,20 +19,28 @@ type Server struct {
 }
 
 func NewServer() (h *Server) {
+	// html template pre-compile
 	tmpls := loadTmlps()
 	render.Init(tmpls, "layout")
+
+	log := logger.Setup(&logger.Options{
+		Level:     slog.LevelDebug,
+		FilePath:  "./logs/wblog_debug.log",
+		AddSource: true,
+	})
+	log.Info("starting WBLOG server...")
 
 	// init repository
 	db, err := repository.InitDB("./blog.db")
 	if err != nil {
 		panic(err)
 	}
-	articleRepo := repository.NewArticleRepo(db)
-	userRepo := repository.NewUserRepo(db)
+	articleRepo := repository.NewArticleRepo(db, log)
+	userRepo := repository.NewUserRepo(db, log)
 
 	// init Services
-	articleService := service.NewArticleService(articleRepo)
-	userService := service.NewUserService(userRepo)
+	articleService := service.NewArticleService(articleRepo, log)
+	userService := service.NewUserService(userRepo, log)
 
 	// init handler
 	app := &handler.App{
@@ -41,10 +51,11 @@ func NewServer() (h *Server) {
 
 	h = &Server{
 		server: http.Server{
-			Addr: ":8080",
+			Addr:    ":8080",
+			Handler: router.LoadRouters(app, log),
 		},
 	}
-	h.server.Handler = router.LoadRouters(app)
+
 	return
 }
 

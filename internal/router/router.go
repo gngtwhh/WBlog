@@ -1,14 +1,15 @@
 package router
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gngtwhh/WBlog/internal/handler"
 	"github.com/gngtwhh/WBlog/internal/middleware"
 )
 
-func LoadRouters(app *handler.App) (router *http.ServeMux) {
-	router = http.NewServeMux()
+func LoadRouters(app *handler.App, logger *slog.Logger) http.Handler {
+	router := http.NewServeMux()
 
 	// static resources
 	router.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../web/static"))))
@@ -45,5 +46,8 @@ func LoadRouters(app *handler.App) (router *http.ServeMux) {
 		router.HandleFunc("POST /api/user/upload-avatar", middleware.Auth(app.User.UploadAvatar))
 	}
 
-	return router
+	var handler http.Handler = router
+	handler = middleware.RequestLogger(logger)(handler)
+
+	return handler
 }
