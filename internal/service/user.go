@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
@@ -8,6 +9,13 @@ import (
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/repository"
 	"github.com/gngtwhh/WBlog/pkg/utils"
+)
+
+var (
+	ErrUserNotFound   = errors.New("user not found")
+	ErrUserExists     = errors.New("username already exists")
+	ErrAuthFailed     = errors.New("username or password is incorrect")
+	ErrInvalidOldPass = errors.New("invalid old password")
 )
 
 type UserService struct {
@@ -24,14 +32,16 @@ func NewUserService(repo repository.UserRepository, logger *slog.Logger) *UserSe
 
 func (svc *UserService) Register(user *model.User) error {
 	existUser, err := svc.repo.GetByUsername(user.Username)
-	if err != nil {
+	if err == nil {
+		if existUser != nil {
+			return ErrUserExists
+		}
+		svc.log.Error("failed to check username existence", "err", err)
 		return err
-	}
-	if existUser != nil {
-		return errors.New("username has been exist")
 	}
 	hashedPwd, err := utils.HashPassword(user.Password)
 	if err != nil {
+		svc.log.Error("failed to hash password", "err", err)
 		return errors.New("internal error: hashing password failed")
 	}
 	user.Password = hashedPwd
@@ -39,73 +49,105 @@ func (svc *UserService) Register(user *model.User) error {
 	if user.Avatar == "" {
 		user.Avatar = "/static/default_avatar.png"
 	}
-	return svc.repo.Create(user)
+	if err := svc.repo.Create(user); err != nil {
+		svc.log.Error("failed to create user", "username", user.Username, "err", err)
+		return err
+	}
+	return nil
 }
 
 func (svc *UserService) Login(username, password string) (*model.User, string, error) {
 	user, err := svc.repo.GetByUsername(username)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, "", ErrAuthFailed
+		}
+		svc.log.Error("login failed: db query error", "err", err)
 		return nil, "", err
 	}
-	if user == nil {
-		return nil, "", errors.New("username or password is incorrect")
-	}
+
 	if !utils.CheckPassword(user.Password, password) {
-		return nil, "", errors.New("username or password is incorrect")
+		return nil, "", ErrAuthFailed
 	}
 	// TODO: issuer should be load by Config/os.env
 	token, err := utils.GenToken(user.ID, user.Username, user.Role, time.Hour*24, "WBLOG")
 	if err != nil {
+		svc.log.Error("failed to generate token", "uid", user.ID, "err", err)
 		return nil, "", err
 	}
 	user.Password = ""
 	return user, token, nil
 }
 
-func (svc *UserService) GetProfile(id uint64) (user *model.User, err error) {
-	user, err = svc.repo.GetByID(id)
+func (svc *UserService) GetProfile(id uint64) (*model.User, error) {
+	user, err := svc.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		svc.log.Error("failed to get user profile", "uid", id, "err", err)
+		return nil, err
+	}
 	if user != nil {
 		user.Password = ""
 	}
-	return
+	return user, nil
 }
 
 func (svc *UserService) UpdateProfile(inputUser *model.User) error {
 	user, err := svc.repo.GetByID(inputUser.ID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
 		return err
 	}
-	if user == nil {
-		return errors.New("user not fount")
-	}
 
-	if inputUser.Nickname != "" {
+	needUpdate := false
+	if inputUser.Nickname != "" && inputUser.Nickname != user.Nickname {
 		user.Nickname = inputUser.Nickname
+		needUpdate = true
 	}
 	// TODO: file upload/link check
-	if inputUser.Avatar != "" {
+	if inputUser.Avatar != "" && inputUser.Avatar != user.Avatar {
 		user.Avatar = inputUser.Avatar
+		needUpdate = true
 	}
-	return svc.repo.Update(user)
+	if !needUpdate {
+		return nil
+	}
+	if err := svc.repo.Update(user); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		svc.log.Error("failed to update profile", "uid", user.ID, "err", err)
+		return err
+	}
+	return nil
 }
 
 func (svc *UserService) ChangePassword(userID uint64, oldPassword, newPassword string) error {
 	user, err := svc.repo.GetByID(userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
 		return err
-	}
-	if user == nil {
-		return errors.New("user not fount")
 	}
 
 	if !utils.CheckPassword(user.Password, oldPassword) {
-		return errors.New("invalid old password")
+		return ErrInvalidOldPass
 	}
 	hashedPwd, err := utils.HashPassword(newPassword)
 	if err != nil {
-		return errors.New("failed to encrypt password")
+		svc.log.Error("faied to hash new password", "uid", userID, "err", err)
+		return errors.New("internal error: failed to hash password")
 	}
 	user.Password = hashedPwd
 
-	return svc.repo.Update(user)
+	if err := svc.repo.Update(user); err != nil {
+		svc.log.Error("failed to update password", "uid", user.ID, "err", err)
+		return err
+	}
+	return nil
 }

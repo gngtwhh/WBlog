@@ -262,6 +262,8 @@
 </style>
 
 <script>
+    const CODE_SUCCESS = 0;
+
     document.addEventListener("DOMContentLoaded", () => {
         loadList(); // 初始加载列表
 
@@ -282,7 +284,7 @@
         gfm: true,
     });
 
-    // --- 视图切换逻辑 ---
+    // --- 视图切换逻辑  ---
     function showEditor(article = null) {
         document.getElementById("view-list").style.display = "none";
         document.getElementById("view-editor").style.display = "block";
@@ -317,19 +319,28 @@
             marked.parse(markdown);
     }
 
-    // --- API 交互 ---
+    // --- API 交互 (核心修改部分) ---
 
     // 1. 加载列表
     async function loadList() {
         try {
-            const res = await fetch("/api/list-articles?page=1&pagesize=100"); // 简单起见，一次拉100条
-            const list = await res.json();
+            const res = await fetch("/api/list-articles?page=1&pagesize=100");
+            const resp = await res.json(); // 解析统一响应结构
 
             const tbody = document.getElementById("article-table-body");
             tbody.innerHTML = "";
             document.getElementById("loading-tip").style.display = "none";
 
-            if (!list || list.length === 0) {
+            // 判断业务状态码
+            if (resp.code !== CODE_SUCCESS) {
+                alert("加载失败: " + resp.msg);
+                return;
+            }
+
+            // 获取真正的数据列表
+            const list = resp.data || [];
+
+            if (list.length === 0) {
                 tbody.innerHTML =
                     '<tr><td colspan="6" style="text-align:center">暂无数据</td></tr>';
                 return;
@@ -341,7 +352,7 @@
                     <td>${item.id}</td>
                     <td><a href="/article/${item.id}" target="_blank" style="font-weight:bold;">${item.title}</a></td>
                     <td>${item.author}</td>
-                    <td>${item.created_at.substring(0, 10)}</td>
+                    <td>${item.created_at ? item.created_at.substring(0, 10) : "-"}</td>
                     <td>${item.view_count}</td>
                     <td>
                         <button class="btn btn-edit" onclick='fetchDetailAndEdit(${item.id})'><i class="fa-solid fa-pen"></i></button>
@@ -352,17 +363,25 @@
             });
         } catch (e) {
             console.error(e);
-            alert("加载失败");
+            alert("网络请求异常");
         }
     }
 
-    // 2. 获取详情并进入编辑 (因为列表数据可能不全，或者为了保险起见重新拉取)
+    // 2. 获取详情并进入编辑
     async function fetchDetailAndEdit(id) {
         try {
             const res = await fetch(`/api/get-article?id=${id}`);
-            const article = await res.json();
-            showEditor(article);
+            const resp = await res.json();
+
+            if (resp.code !== CODE_SUCCESS) {
+                alert(resp.msg);
+                return;
+            }
+
+            // 数据在 resp.data 中
+            showEditor(resp.data);
         } catch (e) {
+            console.error(e);
             alert("获取详情失败");
         }
     }
@@ -388,12 +407,11 @@
         };
 
         let url = "/api/create-article";
-        let method = "POST"; // create 接口是 POST
+        let method = "POST";
 
-        // 如果有 ID，则是更新
         if (id) {
             url = "/api/update-article";
-            data.id = parseInt(id); // 后端需要 uint64
+            data.id = parseInt(id);
         }
 
         try {
@@ -401,18 +419,20 @@
                 method: method,
                 headers: {
                     "Content-Type": "application/json",
-                    // 'Authorization': 'Bearer ...' // 未来鉴权时开启
                 },
                 body: JSON.stringify(data),
             });
 
-            if (res.ok) {
+            // 这里先尝试解析 JSON，因为即使后端报错也是返回 JSON
+            const resp = await res.json();
+
+            if (resp.code === CODE_SUCCESS) {
                 alert("保存成功");
                 hideEditor();
                 loadList(); // 刷新列表
             } else {
-                const err = await res.text();
-                alert("保存失败: " + err);
+                // 显示后端返回的错误信息 (msg)
+                alert("保存失败: " + resp.msg);
             }
         } catch (e) {
             console.error(e);
@@ -425,20 +445,21 @@
         if (!confirm("确定要删除这篇文章吗？此操作不可恢复。")) return;
 
         try {
-            // 为了兼容性，用 fetch 传 query param，并在 body 里也传一下
             const res = await fetch(`/api/delete-article?id=${id}`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: parseInt(id) }),
             });
 
-            if (res.ok) {
-                // alert('删除成功'); // 体验更好可以不弹窗
+            const resp = await res.json();
+
+            if (resp.code === CODE_SUCCESS) {
+                // alert('删除成功');
                 loadList();
             } else {
-                alert("删除失败");
+                alert("删除失败: " + resp.msg);
             }
         } catch (e) {
+            console.error(e);
             alert("网络错误");
         }
     }

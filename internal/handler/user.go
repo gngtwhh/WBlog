@@ -2,12 +2,15 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gngtwhh/WBlog/internal/middleware"
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/service"
+	"github.com/gngtwhh/WBlog/pkg/errcode"
+	"github.com/gngtwhh/WBlog/pkg/response"
 )
 
 type UserHandler struct {
@@ -43,15 +46,18 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid json request body", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid json request body")
+		// http.Error(w, "Invalid json request body", http.StatusBadRequest)
 		return
 	}
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, "need username and password field", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "need username and password field")
+		// http.Error(w, "need username and password field", http.StatusBadRequest)
 		return
 	}
 	if req.Password != req.ConfirmPassword {
-		http.Error(w, "the passwords entered twice must be consistent.", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "the passwords entered twice must be consistent.")
+		// http.Error(w, "the passwords entered twice must be consistent.", http.StatusBadRequest)
 		return
 	}
 
@@ -61,14 +67,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Nickname: req.Nickname,
 	}
 	if err := h.svc.Register(&user); err != nil {
-		// TODO: define specified error code
-		http.Error(w, "register failed: "+err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, service.ErrUserExists) {
+			response.Fail(w, errcode.UserExists)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":  user.ID,
-		"msg": "ok",
+	response.Success(w, map[string]interface{}{
+		"id": user.ID,
 	})
 }
 
@@ -80,40 +87,52 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	user, token, err := h.svc.Login(req.Username, req.Password)
 	if err != nil {
-		http.Error(w, "login failed: "+err.Error(), http.StatusUnauthorized)
+		if errors.Is(err, service.ErrAuthFailed) {
+			response.Fail(w, errcode.AuthFailed)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
 	resp := map[string]interface{}{
 		"token": token,
-		"user":  map[string]interface{}{},
-		"role":  user.Role,
+		"user": map[string]interface{}{
+			"id":       user.ID,
+			"nickname": user.Nickname,
+			"avatar":   user.Avatar,
+			"role":     user.Role,
+		},
 	}
-	json.NewEncoder(w).Encode(resp)
+	response.Success(w, resp)
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r)
 	if !ok {
-		http.Error(w, "unable to obtain user information", http.StatusUnauthorized)
+		response.Fail(w, errcode.TokenInvalid)
 	}
 	user, err := h.svc.GetProfile(userID)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrUserNotFound) {
+			response.Fail(w, errcode.UserNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(user)
+	response.Success(w, user)
 }
 
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r)
 	if !ok {
-		http.Error(w, "unable to obtain user information", http.StatusUnauthorized)
+		response.Fail(w, errcode.TokenInvalid)
 		return
 	}
 
 	var req UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json request body", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid json request body")
 		return
 	}
 
@@ -124,47 +143,63 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.UpdateProfile(user); err != nil {
-		http.Error(w, "update failed: "+err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, service.ErrUserNotFound) {
+			response.Fail(w, errcode.UserNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
-
-	json.NewEncoder(w).Encode(map[string]string{"msg": "ok"})
+	response.Success(w, nil)
 }
 
 func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r)
 	if !ok {
-		http.Error(w, "unable to obtain user information", http.StatusUnauthorized)
+		response.Fail(w, errcode.TokenInvalid)
 		return
 	}
 	var req ChangePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json request body", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid json request body")
+		// http.Error(w, "invalid json request body", http.StatusBadRequest)
 		return
 	}
 	if err := h.svc.ChangePassword(userID, req.OldPassword, req.NewPassword); err != nil {
-		http.Error(w, "update failed: "+err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, service.ErrInvalidOldPass) {
+			response.Fail(w, errcode.AuthFailed, "Old password incorrect")
+			return
+		}
+		if errors.Is(err, service.ErrUserNotFound) {
+			response.Fail(w, errcode.UserNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"msg": "ok"})
+	response.Success(w, nil)
 }
 
 func (h *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	// TODO: need implement
-	http.Error(w, "need implement", http.StatusInternalServerError)
+	response.Fail(w, errcode.ServerError, "feature not implemented yet")
 }
 
 func (h *UserHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "invalid user id")
 		return
 	}
 
 	user, err := h.svc.GetProfile(uint64(id))
 	if err != nil {
-		http.Error(w, "user does not exist", http.StatusNotFound)
+		if errors.Is(err, service.ErrUserNotFound) {
+			response.Fail(w, errcode.UserNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
 		return
 	}
 
@@ -174,5 +209,6 @@ func (h *UserHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		"avatar":     user.Avatar,
 		"created_at": user.CreatedAt,
 	}
-	json.NewEncoder(w).Encode(publicInfo)
+
+	response.Success(w, publicInfo)
 }

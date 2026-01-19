@@ -59,30 +59,49 @@
 </div>
 
 <script>
+    // 定义成功状态码
+    const CODE_SUCCESS = 0;
+
     document.addEventListener("DOMContentLoaded", () => {
         loadArticles();
         loadSiteStats();
     });
 
+    // 1. 加载文章列表
     async function loadArticles() {
+        const container = document.getElementById("article-list");
         try {
             // 请求第一页数据
             const res = await fetch("/api/list-articles?page=1&pagesize=10");
-            const articles = await res.json();
-            const container = document.getElementById("article-list");
+            const resp = await res.json();
+
+            // 1. 检查业务状态码
+            if (resp.code !== CODE_SUCCESS) {
+                container.innerHTML = `<div class="card-widget">加载失败: ${resp.msg}</div>`;
+                return;
+            }
+
+            // 2. 获取列表数据 (处理 null 的情况)
+            const articles = resp.data || [];
             container.innerHTML = "";
 
-            if (!articles || articles.length === 0) {
+            if (articles.length === 0) {
                 container.innerHTML = '<div class="card-widget">暂无文章</div>';
                 return;
             }
 
             articles.forEach((article) => {
-                // 截取摘要
+                // 简单处理摘要：如果有 abstract 就用，没有就截取 content
+                const contentText = article.content
+                    ? article.content.replace(/[#*`>]/g, "")
+                    : "";
                 const abstract =
-                    article.abstract ||
-                    article.content.substring(0, 120).replace(/[#*`]/g, "") +
-                        "...";
+                    article.abstract || contentText.substring(0, 120) + "...";
+
+                // 格式化时间
+                const dateStr = article.created_at
+                    ? article.created_at.substring(0, 10)
+                    : "-";
 
                 // 渲染卡片
                 const html = `
@@ -90,7 +109,7 @@
                         <div class="post-info">
                             <a href="/article/${article.id}" class="post-title">${article.title}</a>
                             <div class="post-meta-data">
-                                <span style="margin-right: 10px;"><i class="fa-regular fa-calendar-check"></i> ${article.created_at.substring(0, 10)}</span>
+                                <span style="margin-right: 10px;"><i class="fa-regular fa-calendar-check"></i> ${dateStr}</span>
                                 <span><i class="fa-regular fa-eye"></i> ${article.view_count || 0} 热度</span>
                             </div>
                             <div class="post-content-preview">${abstract}</div>
@@ -101,18 +120,26 @@
             });
         } catch (err) {
             console.error(err);
-            document.getElementById("article-list").innerHTML =
-                `<div class="card-widget">加载失败: ${err.message}</div>`;
+            container.innerHTML = `<div class="card-widget">网络错误: ${err.message}</div>`;
         }
     }
 
+    // 2. 加载站点统计 (文章总数)
     async function loadSiteStats() {
         try {
             const res = await fetch("/api/articles-count");
-            const count = await res.json();
-            document.getElementById("total-articles").innerText = count;
+            const resp = await res.json();
+
+            if (resp.code === CODE_SUCCESS) {
+                const count =
+                    resp.data && resp.data.count ? resp.data.count : 0;
+                document.getElementById("total-articles").innerText = count;
+            } else {
+                document.getElementById("total-articles").innerText = "-";
+            }
         } catch (e) {
             console.error(e);
+            document.getElementById("total-articles").innerText = "Err";
         }
     }
 </script>

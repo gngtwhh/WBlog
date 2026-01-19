@@ -2,8 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/gngtwhh/WBlog/internal/model"
@@ -29,6 +27,7 @@ func (r *ArticleRepo) Create(article *model.Article) error {
 		INSERT INTO articles (title,author,content,abstract,view_count)
 		VALUES (?,?,?,?,?)
 	`
+	// TODO: add context to control timeout
 	result, err := r.db.Exec(query, article.Title, article.Author, article.Content, article.Abstract,
 		article.ViewCount)
 	if err != nil {
@@ -55,9 +54,6 @@ func (r *ArticleRepo) GetByID(id int64) (model.Article, error) {
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return model.Article{}, errors.New("article not found")
-		}
 		return model.Article{}, err
 	}
 	return a, nil
@@ -85,7 +81,7 @@ func (r *ArticleRepo) Update(article *model.Article) error {
 		return err
 	}
 	if rows == 0 {
-		return fmt.Errorf("article with id %d not found", article.ID)
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -102,7 +98,7 @@ func (r *ArticleRepo) Delete(id int64) error {
 		return err
 	}
 	if rows == 0 {
-		return fmt.Errorf("article with id %d not found", id)
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -112,7 +108,7 @@ func (r *ArticleRepo) GetList(limit, offset int) ([]model.Article, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset <= 0 {
+	if offset < 0 {
 		offset = 0
 	}
 

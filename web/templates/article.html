@@ -50,8 +50,10 @@
         </div>
     </aside>
 </div>
-
 <script>
+    // 定义成功状态码
+    const CODE_SUCCESS = 0;
+
     document.addEventListener("DOMContentLoaded", () => {
         // 1. 从 URL 路径获取 ID: /article/12 -> 12
         const pathSegments = window.location.pathname.split("/");
@@ -66,22 +68,36 @@
 
     async function loadArticleDetail(id) {
         try {
-            // 调用 API (注意 API 依然使用 Query 参数)
+            // 调用 API
             const res = await fetch(`/api/get-article?id=${id}`);
+            // 解析统一响应格式
+            const resp = await res.json();
 
-            if (!res.ok) throw new Error("Article not found or API error");
+            // 1. 检查业务状态码
+            if (resp.code !== CODE_SUCCESS) {
+                // 如果文章没找到，resp.msg 应该是 "文章不存在"
+                showError(resp.msg || "无法加载文章");
+                return;
+            }
 
-            const article = await res.json();
+            // 2. 获取真正的文章数据
+            const article = resp.data;
 
-            // 1. 设置头部信息
+            // 3. 渲染头部信息
             document.getElementById("art-title").innerText = article.title;
-            // 动态设置不同的背景图
+
+            // 动态设置背景图
             const bgUrl = `https://img.paulzzh.com/touhou/random?${article.id}`;
             document.getElementById("post-header").style.backgroundImage =
                 `url('${bgUrl}')`;
 
+            // 格式化时间，防止 created_at 为空
+            const dateStr = article.created_at
+                ? article.created_at.substring(0, 10)
+                : "Unknown Date";
+
             document.getElementById("art-meta").innerHTML = `
-                <span><i class="fa-regular fa-calendar"></i> ${article.created_at.substring(0, 10)}</span>
+                <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
                 <span style="margin: 0 10px">|</span>
                 <span><i class="fa-regular fa-user"></i> ${article.author}</span>
                 <span style="margin: 0 10px">|</span>
@@ -91,7 +107,7 @@
             // 设置网页标题
             document.title = `${article.title} - WBlog`;
 
-            // 2. 渲染 Markdown
+            // 4. 配置 Marked 并渲染 Markdown
             marked.setOptions({
                 highlight: function (code, lang) {
                     const language = highlight.getLanguage(lang)
@@ -105,21 +121,34 @@
             });
 
             document.getElementById("art-content").innerHTML = marked.parse(
-                article.content,
+                article.content || "", // 防止 content 为空导致报错
             );
         } catch (err) {
-            showError(err.message);
+            console.error(err);
+            showError("网络请求失败，请稍后重试");
         }
     }
 
     function showError(msg) {
         document.getElementById("art-title").innerText = "404";
+        // 清空 Meta 信息
         document.getElementById("art-meta").innerText = "";
+
         document.getElementById("art-content").innerHTML = `
             <div style="text-align: center; color: #ccc; padding: 40px;">
                 <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
-                <p style="margin-top: 20px;">${msg}</p>
-                <a href="/" style="color: var(--primary-color);">返回首页</a>
+                <p style="margin-top: 20px; font-size: 1.2rem;">${msg}</p>
+                <div style="margin-top: 30px;">
+                    <a href="/" style="
+                        display: inline-block;
+                        padding: 10px 25px;
+                        background: var(--primary-color);
+                        color: #fff;
+                        text-decoration: none;
+                        border-radius: 20px;
+                        transition: all 0.3s;
+                    ">返回首页</a>
+                </div>
             </div>
         `;
     }

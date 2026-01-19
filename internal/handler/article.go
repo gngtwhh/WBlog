@@ -2,11 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/service"
+	"github.com/gngtwhh/WBlog/pkg/errcode"
+	"github.com/gngtwhh/WBlog/pkg/response"
 )
 
 type ArticleHandler struct {
@@ -36,18 +39,19 @@ func NewArticleHandler(svc *service.ArticleService) *ArticleHandler {
 // @page: page index(start from 1)
 // @pagesize: count of articles per-page
 func (h *ArticleHandler) ListArticles(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	pageSize := r.URL.Query().Get("pagesize")
 	page := r.URL.Query().Get("page")
 
 	pageSizeInt, err := strconv.Atoi(pageSize)
 	if err != nil {
-		http.Error(w, "Invalid page size", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid param: pagesize")
+		// http.Error(w, "Invalid page size", http.StatusBadRequest)
 		return
 	}
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
-		http.Error(w, "Invalid page", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid param: page")
+		// http.Error(w, "Invalid page", http.StatusBadRequest)
 		return
 	}
 
@@ -61,20 +65,22 @@ func (h *ArticleHandler) ListArticles(w http.ResponseWriter, r *http.Request) {
 	offset := (pageInt - 1) * pageSizeInt
 	articles, err := h.svc.ListArticles(pageSizeInt, offset)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(articles)
+	response.Success(w, articles)
 }
 
 // Count handles GET req, and returns the total number of articles.
 func (h *ArticleHandler) Count(w http.ResponseWriter, r *http.Request) {
 	count, err := h.svc.Count()
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(count)
+	response.Success(w, map[string]int64{"count": count})
 }
 
 // GetArticle returns an article by id.
@@ -84,16 +90,22 @@ func (h *ArticleHandler) GetArticle(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid article ID", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid param: id")
+		// http.Error(w, "Invalid article ID", http.StatusBadRequest)
 		return
 	}
 
 	article, err := h.svc.GetArticle(int64(id))
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrArticleNotFound) {
+			response.Fail(w, errcode.ArticleNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(article)
+	response.Success(w, article)
 }
 
 // Create handles POST reqs, and create a new article.
@@ -102,12 +114,14 @@ func (h *ArticleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateArticleRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid json request body", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid json request body")
+		// http.Error(w, "Invalid json request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Title == "" || req.Content == "" {
-		http.Error(w, "Title and content must not be empty", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Title and content must not be empty")
+		// http.Error(w, "Title and content must not be empty", http.StatusBadRequest)
 		return
 	}
 
@@ -119,24 +133,26 @@ func (h *ArticleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.svc.Create(&article)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(article.ID)
+	response.Success(w, map[string]uint64{"id": article.ID})
 }
 
 // Update handles POST reqs, and update the article.
 // POST data must bind to UpdateArticleRequest.
 func (h *ArticleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req UpdateArticleRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid json request body", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid json request body")
+		// http.Error(w, "Invalid json request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.ID == 0 {
-		http.Error(w, "Need ID of the article", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Need ID of the article")
+		// http.Error(w, "Need ID of the article", http.StatusBadRequest)
 	}
 	// // update allow empty content?
 	// if req.Title == "" || req.Content == "" {
@@ -153,10 +169,15 @@ func (h *ArticleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.svc.Update(&article)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrArticleNotFound) {
+			response.Fail(w, errcode.ArticleNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(article.ID)
+	response.Success(w, map[string]uint64{"id": article.ID})
 }
 
 // DELETE req requires one param:
@@ -165,15 +186,20 @@ func (h *ArticleHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	idInt, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid article ID", http.StatusBadRequest)
+		response.Fail(w, errcode.ParamError, "Invalid param: id")
+		// http.Error(w, "Invalid article ID", http.StatusBadRequest)
 		return
 	}
 
-	id := int64(idInt)
-	err = h.svc.Delete(id)
+	err = h.svc.Delete(int64(idInt))
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrArticleNotFound) {
+			response.Fail(w, errcode.ArticleNotFound)
+			return
+		}
+		response.Fail(w, errcode.ServerError)
+		// http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(id)
+	response.Success(w, nil)
 }
