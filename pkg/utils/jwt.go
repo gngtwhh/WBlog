@@ -2,13 +2,14 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // TODO: load jwtsecret from config/os.env
-var jwtSecret = []byte("temp_secret_to_test")
+var jwtSecret = []byte("default_jwt_secret")
 
 type Claims struct {
 	UserID   uint64 `json:"user_id"`
@@ -17,6 +18,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+func InitJwt(secret string) error {
+	if secret == "" {
+		return fmt.Errorf("secret is empty")
+	}
+	jwtSecret = []byte(secret)
+	return nil
+}
 func GenToken(userID uint64, username string, role int, expires time.Duration, issuer string) (string, error) {
 	claims := Claims{
 		UserID:   userID,

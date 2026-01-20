@@ -2,73 +2,94 @@ package app
 
 import (
 	"html/template"
-	"log"
 	"log/slog"
 	"net/http"
 
+	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/handler"
 	"github.com/gngtwhh/WBlog/internal/render"
 	"github.com/gngtwhh/WBlog/internal/repository"
 	"github.com/gngtwhh/WBlog/internal/router"
 	"github.com/gngtwhh/WBlog/internal/service"
 	"github.com/gngtwhh/WBlog/pkg/logger"
+	"github.com/gngtwhh/WBlog/pkg/utils"
 )
 
 type Server struct {
 	server http.Server
+	logger *slog.Logger
 }
 
 func NewServer() (h *Server) {
-	// html template pre-compile
-	tmpls := loadTmlps()
-	render.Init(tmpls, "layout")
-
 	log := logger.Setup(&logger.Options{
 		Level:     slog.LevelDebug,
-		FilePath:  "./logs/wblog_debug.log",
-		AddSource: true,
+		FilePath:  config.Cfg.App.LogFile,
+		AddSource: false,
 	})
-	log.Info("starting WBLOG server...")
+	log.Info("starting WBLOG server",
+		slog.Group("config",
+			slog.String("mode", config.Cfg.Server.RunMode),
+			slog.String("port", config.Cfg.Server.Port),
+			slog.String("db_dsn", config.Cfg.Database.DSN),
+			slog.String("log_file", config.Cfg.App.LogFile),
+		),
+	)
+
+	if err := utils.InitJwt(config.Cfg.App.JwtSecret); err != nil {
+		log.Error("failed to init jwt pkg", "err", err)
+		panic(err)
+	}
 
 	// init repository
-	db, err := repository.InitDB("./blog.db")
+	log.Info("initializing database...")
+	db, err := repository.InitDB(config.Cfg.Database.DSN)
 	if err != nil {
+		log.Error("failed to connect database", "err", err)
 		panic(err)
 	}
 	articleRepo := repository.NewArticleRepo(db, log)
 	userRepo := repository.NewUserRepo(db, log)
+	commentRepo := repository.NewCommentRepo(db, log)
 
+	log.Info("initializing service...")
 	// init Services
 	articleService := service.NewArticleService(articleRepo, log)
 	userService := service.NewUserService(userRepo, log)
+	commentService := service.NewCommentService(commentRepo, log)
 
 	// init handler
 	app := &handler.App{
 		Index:   handler.NewIndexHandler(articleService),
 		Article: handler.NewArticleHandler(articleService),
 		User:    handler.NewUserHandler(userService),
+		Comment: handler.NewCommentHandler(commentService, articleService),
 	}
+
+	// html template pre-compile
+	log.Info("pre-compiling html templates...")
+	tmpls := loadTmlps()
+	render.Init(tmpls, "layout")
 
 	h = &Server{
 		server: http.Server{
-			Addr:    ":8080",
+			Addr:    ":" + config.Cfg.Server.Port,
 			Handler: router.LoadRouters(app, log),
 		},
+		logger: log,
 	}
-
 	return
 }
 
 func (s *Server) Run() {
-	if err := s.server.ListenAndServe(); err != nil {
-		log.Println(err)
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		s.logger.Error("server startup failed", "err", err)
 	}
 }
 
 func loadTmlps() map[string]*template.Template {
 	tmpls := make(map[string]*template.Template)
 
-	baseDir := "../web/templates/"
+	baseDir := config.Cfg.App.TemplateDir
 	layout := baseDir + "layout/layout.html"
 
 	tmpls["index"] = template.Must(template.ParseFiles(layout, baseDir+"index.html"))

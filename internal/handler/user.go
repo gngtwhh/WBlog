@@ -162,7 +162,6 @@ func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var req ChangePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.Fail(w, errcode.ParamError, "Invalid json request body")
-		// http.Error(w, "invalid json request body", http.StatusBadRequest)
 		return
 	}
 	if err := h.svc.ChangePassword(userID, req.OldPassword, req.NewPassword); err != nil {

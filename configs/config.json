@@ -1,0 +1,16 @@
+{
+  "server": {
+    "addr": "localhost",
+    "port": "8080",
+    "run_mode": "debug"
+  },
+  "database": {
+    "dsn": "file:./data/blog.db?_journal_mode=WAL&_busy_timeout=5000"
+  },
+  "app": {
+    "template_dir": "./web/templates/",
+    "static_dir": "./web/static/",
+    "log_file": "./logs/blog.log",
+    "jwt_secret": "test_secret"
+  }
+}

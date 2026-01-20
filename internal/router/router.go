@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/handler"
 	"github.com/gngtwhh/WBlog/internal/middleware"
 )
@@ -12,7 +13,7 @@ func LoadRouters(app *handler.App, logger *slog.Logger) http.Handler {
 	router := http.NewServeMux()
 
 	// static resources
-	router.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../web/static"))))
+	router.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(config.Cfg.App.StaticDir))))
 
 	// root and /index
 	// TODO: use app
@@ -44,6 +45,13 @@ func LoadRouters(app *handler.App, logger *slog.Logger) http.Handler {
 		router.HandleFunc("POST /api/user/update", middleware.Auth(app.User.UpdateProfile))
 		router.HandleFunc("POST /api/user/update-password", middleware.Auth(app.User.UpdatePassword))
 		router.HandleFunc("POST /api/user/upload-avatar", middleware.Auth(app.User.UploadAvatar))
+	}
+
+	// comment api
+	router.HandleFunc("GET /api/list-comments", app.Comment.ListComments)
+	// authentication required
+	{
+		router.HandleFunc("GET /api/create-comment", middleware.Auth(app.Comment.CreateComment))
 	}
 
 	var handler http.Handler = router

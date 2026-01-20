@@ -7,19 +7,17 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func InitDB(datasourcePath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", datasourcePath)
+func InitDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
 	if err = db.Ping(); err != nil {
 		return nil, err
 	}
-
 	if err := createTable(db); err != nil {
 		return nil, err
 	}
-
 	return db, nil
 }
 

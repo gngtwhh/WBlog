@@ -30,6 +30,89 @@
                 版权协议，转载请附上原文出处链接和本声明。
             </div>
         </div>
+
+        <div class="card-widget" style="margin-top: 20px">
+            <div
+                style="
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    font-size: 1.1rem;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 10px;
+                "
+            >
+                <i class="fa-regular fa-comments"></i> 评论区
+            </div>
+
+            <div id="comment-input-area" style="margin-bottom: 30px">
+                <div
+                    id="guest-panel"
+                    style="
+                        text-align: center;
+                        padding: 30px;
+                        background: #f9f9f9;
+                        border-radius: 8px;
+                    "
+                >
+                    <p style="color: #666; margin-bottom: 15px">
+                        登录后参与讨论
+                    </p>
+                    <a href="/login.html" class="btn-primary">
+                        <i class="fa-solid fa-right-to-bracket"></i> 立即登录
+                    </a>
+                </div>
+
+                <div
+                    id="user-panel"
+                    style="display: none; display: flex; gap: 15px"
+                >
+                    <div style="flex-shrink: 0">
+                        <img
+                            id="current-user-avatar"
+                            src="/static/default_avatar.png"
+                            style="
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                object-fit: cover;
+                                border: 1px solid #eee;
+                            "
+                        />
+                    </div>
+                    <div style="flex-grow: 1">
+                        <textarea
+                            id="comment-content"
+                            rows="3"
+                            placeholder="友善的评论是交流的起点..."
+                            style="
+                                width: 100%;
+                                padding: 10px;
+                                border: 1px solid #ddd;
+                                border-radius: 4px;
+                                resize: vertical;
+                                font-family: inherit;
+                                outline: none;
+                            "
+                        ></textarea>
+                        <div style="text-align: right; margin-top: 10px">
+                            <button
+                                onclick="submitComment()"
+                                class="btn-primary"
+                                id="btn-submit"
+                            >
+                                发送评论
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="comment-list">
+                <div style="text-align: center; color: #999; padding: 20px">
+                    <i class="fa-solid fa-spinner fa-spin"></i> 加载评论中...
+                </div>
+            </div>
+        </div>
     </div>
 
     <aside class="aside-content">
@@ -50,52 +133,126 @@
         </div>
     </aside>
 </div>
+
+<style>
+    /* 按钮通用样式 */
+    .btn-primary {
+        background: var(--primary-color, #49b1f5); /* 默认 fallback 颜色 */
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .btn-primary:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .btn-primary:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* 评论项样式 */
+    .comment-item {
+        display: flex;
+        gap: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        padding: 15px 0;
+        animation: fadeIn 0.5s ease;
+    }
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .comment-meta {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .comment-author {
+        font-weight: bold;
+        color: #333;
+        font-size: 0.95rem;
+    }
+    .comment-body {
+        color: #4c4948;
+        line-height: 1.6;
+        word-break: break-all;
+        white-space: pre-wrap; /* 保留换行符 */
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
 <script>
-    // 定义成功状态码
+    // 定义常量
     const CODE_SUCCESS = 0;
 
-    document.addEventListener("DOMContentLoaded", () => {
+    // 全局变量
+    let currentArticleId = null;
+    let isLogin = false;
+
+    document.addEventListener("DOMContentLoaded", async () => {
         // 1. 从 URL 路径获取 ID: /article/12 -> 12
         const pathSegments = window.location.pathname.split("/");
         const id = pathSegments.filter((s) => s).pop();
 
         if (id && !isNaN(id)) {
+            currentArticleId = id; // 保存到全局变量
+
+            // 2. 并行执行：加载文章详情、检查登录、加载评论
             loadArticleDetail(id);
+            await checkLoginStatus(); // 等待登录状态检查完毕，决定显示哪个面板
+            loadComments(id);
         } else {
             showError("无效的文章链接");
         }
     });
 
+    // --- 核心逻辑 1: 加载文章详情 ---
     async function loadArticleDetail(id) {
         try {
-            // 调用 API
             const res = await fetch(`/api/get-article?id=${id}`);
-            // 解析统一响应格式
             const resp = await res.json();
 
-            // 1. 检查业务状态码
             if (resp.code !== CODE_SUCCESS) {
-                // 如果文章没找到，resp.msg 应该是 "文章不存在"
                 showError(resp.msg || "无法加载文章");
                 return;
             }
 
-            // 2. 获取真正的文章数据
             const article = resp.data;
-
-            // 3. 渲染头部信息
             document.getElementById("art-title").innerText = article.title;
-
-            // 动态设置背景图
             const bgUrl = `https://img.paulzzh.com/touhou/random?${article.id}`;
             document.getElementById("post-header").style.backgroundImage =
                 `url('${bgUrl}')`;
 
-            // 格式化时间，防止 created_at 为空
             const dateStr = article.created_at
                 ? article.created_at.substring(0, 10)
-                : "Unknown Date";
-
+                : "Unknown";
             document.getElementById("art-meta").innerHTML = `
                 <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
                 <span style="margin: 0 10px">|</span>
@@ -104,53 +261,191 @@
                 <span><i class="fa-regular fa-eye"></i> ${article.view_count} 阅读</span>
             `;
 
-            // 设置网页标题
             document.title = `${article.title} - WBlog`;
 
-            // 4. 配置 Marked 并渲染 Markdown
-            marked.setOptions({
-                highlight: function (code, lang) {
-                    const language = highlight.getLanguage(lang)
-                        ? lang
-                        : "plaintext";
-                    return highlight.highlight(code, { language }).value;
-                },
-                langPrefix: "hljs language-",
-                breaks: true,
-                gfm: true,
-            });
-
-            document.getElementById("art-content").innerHTML = marked.parse(
-                article.content || "", // 防止 content 为空导致报错
-            );
+            // 配置 Marked (Markdown 渲染)
+            if (typeof marked !== "undefined") {
+                marked.setOptions({
+                    highlight: function (code, lang) {
+                        const language =
+                            typeof highlight !== "undefined" &&
+                            highlight.getLanguage(lang)
+                                ? lang
+                                : "plaintext";
+                        return highlight.highlight(code, { language }).value;
+                    },
+                    langPrefix: "hljs language-",
+                    breaks: true,
+                    gfm: true,
+                });
+                document.getElementById("art-content").innerHTML = marked.parse(
+                    article.content || "",
+                );
+            } else {
+                document.getElementById("art-content").innerText =
+                    article.content;
+                console.warn("Marked.js not loaded");
+            }
         } catch (err) {
             console.error(err);
-            showError("网络请求失败，请稍后重试");
+            showError("文章加载失败，请检查网络");
         }
     }
 
+    // --- 核心逻辑 2: 检查登录状态 ---
+    async function checkLoginStatus() {
+        try {
+            // 请求用户信息接口，假设接口返回 {code: 0, data: {username: "...", avatar: "..."}}
+            const res = await fetch("/api/user/profile");
+
+            // 如果后端 Auth 中间件对于未登录返回 401，这里会 catch 或者 status != 200
+            if (res.ok) {
+                const resp = await res.json();
+                if (resp.code === CODE_SUCCESS) {
+                    isLogin = true;
+                    // 切换 UI 到登录态
+                    document.getElementById("guest-panel").style.display =
+                        "none";
+                    document.getElementById("user-panel").style.display =
+                        "flex";
+
+                    // 设置当前用户头像
+                    if (resp.data && resp.data.avatar) {
+                        document.getElementById("current-user-avatar").src =
+                            resp.data.avatar;
+                    }
+                    return;
+                }
+            }
+        } catch (e) {
+            // 忽略错误，默认为未登录
+        }
+
+        // 未登录态
+        isLogin = false;
+        document.getElementById("guest-panel").style.display = "block";
+        document.getElementById("user-panel").style.display = "none";
+    }
+
+    // --- 核心逻辑 3: 加载评论列表 ---
+    async function loadComments(articleId) {
+        const listContainer = document.getElementById("comment-list");
+        try {
+            const res = await fetch(
+                `/api/list-comments?article_id=${articleId}`,
+            );
+            const resp = await res.json();
+
+            if (resp.code === CODE_SUCCESS) {
+                const comments = resp.data || [];
+                if (comments.length === 0) {
+                    listContainer.innerHTML =
+                        '<div style="text-align:center; color:#ccc; padding:30px;">暂无评论，快来抢沙发~</div>';
+                    return;
+                }
+
+                // 生成 HTML
+                let html = "";
+                comments.forEach((c) => {
+                    // 防御 XSS
+                    const safeContent = escapeHtml(c.content);
+                    const avatar = c.avatar || "/static/default_avatar.png";
+                    const time = c.created_at || "刚刚";
+
+                    html += `
+                        <div class="comment-item">
+                            <img src="${avatar}" class="comment-avatar">
+                            <div style="flex-grow: 1;">
+                                <div class="comment-meta">
+                                    <span class="comment-author">${c.username}</span>
+                                    <span style="font-size: 0.8rem; color: #bbb;">${time}</span>
+                                </div>
+                                <div class="comment-body">${safeContent}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = html;
+            } else {
+                listContainer.innerHTML = `<div style="text-align:center; color:red;">${resp.msg || "评论加载失败"}</div>`;
+            }
+        } catch (e) {
+            listContainer.innerHTML =
+                '<div style="text-align:center; color:#ccc;">网络错误，无法加载评论</div>';
+        }
+    }
+
+    // --- 核心逻辑 4: 提交评论 ---
+    async function submitComment() {
+        if (!currentArticleId) return;
+
+        const contentBox = document.getElementById("comment-content");
+        const content = contentBox.value.trim();
+
+        if (!content) {
+            alert("请填写评论内容");
+            return;
+        }
+
+        const btn = document.getElementById("btn-submit");
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "发送中...";
+
+        try {
+            const res = await fetch("/api/create-comment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    article_id: parseInt(currentArticleId),
+                    content: content,
+                }),
+            });
+            const resp = await res.json();
+
+            if (resp.code === CODE_SUCCESS) {
+                // 成功：清空输入框，刷新列表
+                contentBox.value = "";
+                loadComments(currentArticleId);
+            } else {
+                alert(resp.msg || "评论失败");
+            }
+        } catch (e) {
+            alert("网络请求出错，请稍后重试");
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+
+    // --- 工具函数 ---
     function showError(msg) {
         document.getElementById("art-title").innerText = "404";
-        // 清空 Meta 信息
         document.getElementById("art-meta").innerText = "";
-
         document.getElementById("art-content").innerHTML = `
             <div style="text-align: center; color: #ccc; padding: 40px;">
                 <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
                 <p style="margin-top: 20px; font-size: 1.2rem;">${msg}</p>
                 <div style="margin-top: 30px;">
-                    <a href="/" style="
-                        display: inline-block;
-                        padding: 10px 25px;
-                        background: var(--primary-color);
-                        color: #fff;
-                        text-decoration: none;
-                        border-radius: 20px;
-                        transition: all 0.3s;
-                    ">返回首页</a>
+                    <a href="/" class="btn-primary">返回首页</a>
                 </div>
             </div>
         `;
+        // 隐藏评论区
+        document.querySelector(".card-widget:nth-of-type(2)").style.display =
+            "none";
+    }
+
+    // 简单的 HTML 转义防止 XSS
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 </script>
 {{end}}

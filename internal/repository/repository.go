@@ -21,3 +21,9 @@ type UserRepository interface {
 	GetByID(id uint64) (*model.User, error)
 	Update(user *model.User) error
 }
+
+// CommentRepository defines the method for managing comments of articles.
+type CommentRepository interface {
+	Create(comment *model.Comment) error
+	ListByArticleID(articleID int64, limit, offset int) ([]*model.Comment, error)
+}

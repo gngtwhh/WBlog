@@ -5,4 +5,5 @@ type App struct {
 	Index   *IndexHandler
 	Article *ArticleHandler
 	User    *UserHandler
+	Comment *CommentHandler
 }
