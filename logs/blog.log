@@ -1,0 +1,42 @@
+time=2026-01-20T12:33:54.812+08:00 level=INFO msg="starting WBLOG server" config.mode=debug config.port=8080 config.db_dsn="file:./data/blog.db?_journal_mode=WAL&_busy_timeout=5000" config.log_file=./logs/blog.log
+time=2026-01-20T12:33:54.812+08:00 level=INFO msg="initializing database..."
+time=2026-01-20T12:33:54.813+08:00 level=INFO msg="initializing service..."
+time=2026-01-20T12:33:54.813+08:00 level=INFO msg="pre-compiling html templates..."
+time=2026-01-20T12:33:58.393+08:00 level=INFO msg="http request" req_id=20260120123358.392715 method=GET path=/ ip=[::1]:54150 cost_ms=0
+time=2026-01-20T12:33:58.439+08:00 level=INFO msg="http request" req_id=20260120123358.433744 method=GET path=/static/css/style.css ip=[::1]:54150 cost_ms=5
+time=2026-01-20T12:33:58.654+08:00 level=INFO msg="http request" req_id=20260120123358.654000 method=GET path=/api/list-articles ip=[::1]:54150 cost_ms=0
+time=2026-01-20T12:33:58.654+08:00 level=INFO msg="http request" req_id=20260120123358.654382 method=GET path=/api/articles-count ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:01.304+08:00 level=INFO msg="http request" req_id=20260120123401.303867 method=GET path=/favicon.ico ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:01.940+08:00 level=INFO msg="http request" req_id=20260120123401.940559 method=GET path=/article/1 ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:02.003+08:00 level=INFO msg="http request" req_id=20260120123402.002904 method=GET path=/api/get-article ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:02.489+08:00 level=INFO msg="http request" req_id=20260120123402.488791 method=GET path=/favicon.ico ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:04.605+08:00 level=INFO msg="http request" req_id=20260120123404.605194 method=GET path=/ ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:04.666+08:00 level=INFO msg="http request" req_id=20260120123404.665852 method=GET path=/api/list-articles ip=[::1]:54160 cost_ms=0
+time=2026-01-20T12:34:04.666+08:00 level=INFO msg="http request" req_id=20260120123404.666560 method=GET path=/api/articles-count ip=[::1]:54150 cost_ms=0
+time=2026-01-20T12:34:04.717+08:00 level=INFO msg="http request" req_id=20260120123404.717108 method=GET path=/favicon.ico ip=[::1]:54150 cost_ms=0
+time=2026-01-20T16:17:32.976+08:00 level=INFO msg="starting WBLOG server" config.mode=debug config.port=8080 config.db_dsn="file:./data/blog.db?_journal_mode=WAL&_busy_timeout=5000" config.log_file=./logs/blog.log
+time=2026-01-20T16:17:32.976+08:00 level=INFO msg="initializing database..."
+time=2026-01-20T16:17:32.976+08:00 level=INFO msg="initializing service..."
+time=2026-01-20T16:17:32.976+08:00 level=INFO msg="pre-compiling html templates..."
+time=2026-01-20T16:17:38.181+08:00 level=INFO msg="http request" req_id=20260120161738.181437 method=GET path=/ ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:38.407+08:00 level=INFO msg="http request" req_id=20260120161738.407058 method=GET path=/api/list-articles ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:38.407+08:00 level=INFO msg="http request" req_id=20260120161738.407239 method=GET path=/api/articles-count ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:39.704+08:00 level=INFO msg="http request" req_id=20260120161739.704393 method=GET path=/favicon.ico ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:40.039+08:00 level=INFO msg="http request" req_id=20260120161740.038747 method=GET path=/article/1 ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:40.075+08:00 level=INFO msg="http request" req_id=20260120161740.075304 method=GET path=/static/default_avatar.png ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:40.142+08:00 level=INFO msg="http request" req_id=20260120161740.142493 method=GET path=/api/user/profile ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:40.142+08:00 level=INFO msg="http request" req_id=20260120161740.142254 method=GET path=/api/get-article ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:40.149+08:00 level=ERROR msg="failed to list articles" component=comment_service err="no such table: comments"
+time=2026-01-20T16:17:40.149+08:00 level=INFO msg="http request" req_id=20260120161740.149279 method=GET path=/api/list-comments ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:40.498+08:00 level=INFO msg="http request" req_id=20260120161740.497560 method=GET path=/favicon.ico ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:42.998+08:00 level=INFO msg="http request" req_id=20260120161742.998344 method=GET path=/login.html ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:43.060+08:00 level=INFO msg="http request" req_id=20260120161743.060483 method=GET path=/api/list-articles ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:43.061+08:00 level=INFO msg="http request" req_id=20260120161743.061141 method=GET path=/api/articles-count ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:43.104+08:00 level=INFO msg="http request" req_id=20260120161743.104484 method=GET path=/favicon.ico ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:47.511+08:00 level=INFO msg="http request" req_id=20260120161747.511765 method=GET path=/article/1 ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:47.531+08:00 level=INFO msg="http request" req_id=20260120161747.531252 method=GET path=/static/default_avatar.png ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:47.578+08:00 level=INFO msg="http request" req_id=20260120161747.577974 method=GET path=/api/get-article ip=[::1]:38392 cost_ms=0
+time=2026-01-20T16:17:47.578+08:00 level=INFO msg="http request" req_id=20260120161747.578669 method=GET path=/api/user/profile ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:47.620+08:00 level=ERROR msg="failed to list articles" component=comment_service err="no such table: comments"
+time=2026-01-20T16:17:47.620+08:00 level=INFO msg="http request" req_id=20260120161747.620758 method=GET path=/api/list-comments ip=[::1]:38396 cost_ms=0
+time=2026-01-20T16:17:47.632+08:00 level=INFO msg="http request" req_id=20260120161747.632397 method=GET path=/favicon.ico ip=[::1]:38396 cost_ms=0
