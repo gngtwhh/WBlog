@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Options struct {
@@ -29,6 +30,14 @@ func Setup(opts *Options) *slog.Logger {
 	handlerOpts := &slog.HandlerOptions{
 		Level:     opts.Level,
 		AddSource: opts.AddSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				if t, ok := a.Value.Any().(time.Time); ok {
+					return slog.String(slog.TimeKey, t.Format(time.DateTime))
+				}
+			}
+			return a
+		},
 	}
 	var handler slog.Handler
 	if opts.Level == slog.LevelDebug {

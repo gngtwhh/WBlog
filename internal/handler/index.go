@@ -5,6 +5,8 @@ import (
 
 	"github.com/gngtwhh/WBlog/internal/render"
 	"github.com/gngtwhh/WBlog/internal/service"
+	"github.com/gngtwhh/WBlog/pkg/errcode"
+	"github.com/gngtwhh/WBlog/pkg/response"
 )
 
 type IndexData struct {
@@ -22,15 +24,11 @@ func NewIndexHandler(svc *service.ArticleService) *IndexHandler {
 
 // Index returns a json data
 func (h *IndexHandler) Index(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		response.Fail(w, errcode.NotFound)
+		return
+	}
 	h.IndexHtml(w, r)
-	// w.Header().Set("Content-Type", "application/json")
-	// // TODO: configurable data
-	// data := IndexData{
-	// 	Title: "WBlog - A Simple Blog",
-	// 	Desc:  "written in golang",
-	// }
-	// jsonStr, _ := json.Marshal(data)
-	// w.Write(jsonStr)
 }
 
 func (h *IndexHandler) IndexHtml(w http.ResponseWriter, r *http.Request) {
