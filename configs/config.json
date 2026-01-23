@@ -11,6 +11,7 @@
     "template_dir": "./web/templates/",
     "static_dir": "./web/static/",
     "log_file": "./logs/blog.log",
-    "jwt_secret": "test_secret"
+    "jwt_secret": "test_secret",
+    "jwt_expire_time": "24h"
   }
 }

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"time"
 
+	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/repository"
 	"github.com/gngtwhh/WBlog/pkg/utils"
@@ -70,7 +70,7 @@ func (svc *UserService) Login(username, password string) (*model.User, string, e
 		return nil, "", ErrAuthFailed
 	}
 	// TODO: issuer should be load by Config/os.env
-	token, err := utils.GenToken(user.ID, user.Username, user.Role, time.Hour*24, "WBLOG")
+	token, err := utils.GenToken(user.ID, user.Username, user.Role, config.Cfg.GetJwtDuration(), "WBLOG")
 	if err != nil {
 		svc.log.Error("failed to generate token", "uid", user.ID, "err", err)
 		return nil, "", err

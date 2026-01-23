@@ -51,7 +51,7 @@ func LoadRouters(app *handler.App, logger *slog.Logger) http.Handler {
 	router.HandleFunc("GET /api/list-comments", app.Comment.ListComments)
 	// authentication required
 	{
-		router.HandleFunc("GET /api/create-comment", middleware.Auth(app.Comment.CreateComment))
+		router.HandleFunc("POST /api/create-comment", middleware.Auth(app.Comment.CreateComment))
 	}
 
 	var handler http.Handler = router

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 // 全局变量，加载后通过 config.Cfg 访问
@@ -29,10 +30,19 @@ type DatabaseConfig struct {
 }
 
 type AppConfig struct {
-	TemplateDir string `json:"template_dir"`
-	StaticDir   string `json:"static_dir"`
-	LogFile     string `json:"log_file"`
-	JwtSecret   string `json:"jwt_secret"`
+	TemplateDir   string `json:"template_dir"`
+	StaticDir     string `json:"static_dir"`
+	LogFile       string `json:"log_file"`
+	JwtSecret     string `json:"jwt_secret"`
+	JwtExpireTime string `json:"jwt_expire_time"`
+}
+
+func (cfg *Config) GetJwtDuration() time.Duration {
+	d, err := time.ParseDuration(cfg.App.JwtExpireTime)
+	if err != nil {
+		return 24 * time.Hour // default 24h
+	}
+	return d
 }
 
 func Load(filePath string) error {
@@ -54,6 +64,9 @@ func Load(filePath string) error {
 
 	if cfg.App.JwtSecret == "" {
 		return fmt.Errorf("jwt secret is empty")
+	}
+	if _, err := time.ParseDuration(cfg.App.JwtExpireTime); err != nil {
+		return fmt.Errorf("The format of the JWT expiration time is incorrect")
 	}
 
 	Cfg = cfg
