@@ -1,150 +1,566 @@
 {{define "content"}}
-<header
-    class="page-header"
-    style="
-        height: 300px;
-        background-image: url(&quot;https://img.paulzzh.com/touhou/random?admin&quot;);
-    "
->
-    <h1 class="site-title">后台管理系统</h1>
-    <p class="post-meta">
-        <i class="fa-solid fa-gear"></i> Manage your content efficiently
-    </p>
-</header>
-
-<div class="layout-container" style="flex-direction: column; max-width: 1400px">
-    <div id="view-list" class="main-content" style="width: 100%">
-        <div class="card-widget">
-            <div
-                style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 20px;
-                "
+<div class="admin-wrapper">
+    <header class="admin-header">
+        <div class="header-left">
+            <h1 class="brand-title">
+                <i class="fa-solid fa-feather-pointed"></i> WBlog Admin
+            </h1>
+        </div>
+        <div class="header-right">
+            <a href="/" target="_blank" class="btn-text nav-link"
+                ><i class="fa-solid fa-house"></i> 博客首页</a
             >
-                <h2 style="margin: 0; border: none; font-size: 1.5rem">
-                    <i class="fa-solid fa-list"></i> 文章列表
-                </h2>
-                <button class="btn btn-primary" onclick="showEditor()">
-                    <i class="fa-solid fa-plus"></i> 新建文章
-                </button>
-            </div>
+            <span class="divider">|</span>
+            <span id="global-status" class="status-saved"
+                ><i class="fa-solid fa-check"></i> 所有更改已保存</span
+            >
+        </div>
+    </header>
 
-            <div class="table-container">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th width="50">ID</th>
-                            <th>标题</th>
-                            <th width="150">作者</th>
-                            <th width="150">发布时间</th>
-                            <th width="100">浏览量</th>
-                            <th width="150">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="article-table-body"></tbody>
-                </table>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="action-buttons">
+                    <button
+                        class="btn btn-primary"
+                        style="flex: 1"
+                        onclick="createNewArticle()"
+                    >
+                        <i class="fa-solid fa-plus"></i> 新建
+                    </button>
+                    <button
+                        id="btn-manage-unsaved"
+                        class="btn btn-warning"
+                        style="display: none; flex: 1"
+                        onclick="openBatchManager()"
+                    >
+                        <i class="fa-solid fa-list-check"></i> 待保存
+                        <span id="unsaved-count" class="badge">0</span>
+                    </button>
+                </div>
+            </div>
+            <div class="article-list-container">
                 <div
-                    id="loading-tip"
+                    id="sidebar-loading"
                     style="text-align: center; padding: 20px; color: #999"
                 >
-                    <i class="fa-solid fa-spinner fa-spin"></i> 加载中...
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+                <ul id="article-list" class="article-list"></ul>
+            </div>
+        </aside>
+
+        <main class="editor-area" id="editor-area" style="visibility: hidden">
+            <div class="editor-meta-bar">
+                <div class="meta-inputs">
+                    <input type="hidden" id="edit-id" />
+                    <input
+                        type="text"
+                        id="edit-title"
+                        class="input-title"
+                        placeholder="在此输入文章标题..."
+                        autocomplete="off"
+                    />
+                    <div class="meta-row">
+                        <input
+                            type="text"
+                            id="edit-author"
+                            class="input-meta"
+                            placeholder="作者"
+                            value="WAHAHA"
+                        />
+                        <input
+                            type="text"
+                            id="edit-abstract"
+                            class="input-meta"
+                            style="flex-grow: 1"
+                            placeholder="摘要 (选填，留空自动截取)"
+                        />
+                    </div>
+                </div>
+                <div class="meta-actions">
+                    <span id="current-save-status" class="save-status-text"
+                        >已保存</span
+                    >
+                    <button
+                        class="btn btn-danger-soft"
+                        id="btn-delete"
+                        onclick="handleDelete()"
+                        style="display: none"
+                    >
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <button
+                        class="btn btn-primary"
+                        onclick="saveCurrentArticle()"
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i> 保存
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div
-        id="view-editor"
-        class="main-content"
-        style="width: 100%; display: none"
-    >
-        <div class="card-widget">
-            <div
-                style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 20px;
-                    border-bottom: 1px solid #eee;
-                    padding-bottom: 15px;
-                "
-            >
-                <h2
-                    style="margin: 0; border: none; font-size: 1.5rem"
-                    id="editor-title"
-                >
-                    新建文章
-                </h2>
-                <div>
-                    <button class="btn btn-secondary" onclick="hideEditor()">
-                        取消
+            <input
+                type="file"
+                id="file-import-input"
+                accept=".md,.markdown,.txt"
+                style="display: none"
+            />
+
+            <div class="editor-toolbar">
+                <div class="toolbar-group">
+                    <button
+                        title="加粗 (Ctrl+B)"
+                        onclick="insertMarkdown('**', '**')"
+                    >
+                        <i class="fa-solid fa-bold"></i>
                     </button>
-                    <button class="btn btn-primary" onclick="saveArticle()">
-                        <i class="fa-solid fa-save"></i> 保存发布
+                    <button
+                        title="斜体 (Ctrl+I)"
+                        onclick="insertMarkdown('*', '*')"
+                    >
+                        <i class="fa-solid fa-italic"></i>
+                    </button>
+                    <button title="删除线" onclick="insertMarkdown('~~', '~~')">
+                        <i class="fa-solid fa-strikethrough"></i>
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button title="标题 H1" onclick="insertMarkdown('# ', '')">
+                        H1
+                    </button>
+                    <button title="标题 H2" onclick="insertMarkdown('## ', '')">
+                        H2
+                    </button>
+                    <button
+                        title="标题 H3"
+                        onclick="insertMarkdown('### ', '')"
+                    >
+                        H3
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button title="引用" onclick="insertMarkdown('> ', '')">
+                        <i class="fa-solid fa-quote-right"></i>
+                    </button>
+                    <button
+                        title="代码块"
+                        onclick="insertMarkdown('```\n', '\n```')"
+                    >
+                        <i class="fa-solid fa-code"></i>
+                    </button>
+                    <button
+                        title="链接"
+                        onclick="insertMarkdown('[链接描述](', ')')"
+                    >
+                        <i class="fa-solid fa-link"></i>
+                    </button>
+                    <button
+                        title="图片"
+                        onclick="insertMarkdown('![图片描述](', ')')"
+                    >
+                        <i class="fa-regular fa-image"></i>
+                    </button>
+                </div>
+                <div class="toolbar-group" style="margin-left: auto">
+                    <button
+                        title="导入 Markdown 文件"
+                        onclick="
+                            document.getElementById('file-import-input').click()
+                        "
+                    >
+                        <i class="fa-solid fa-file-import"></i> 导入
                     </button>
                 </div>
             </div>
 
-            <input type="hidden" id="edit-id" />
-
-            <div class="form-group">
-                <input
-                    type="text"
-                    id="edit-title"
-                    class="form-control title-input"
-                    placeholder="在此输入文章标题..."
-                />
-            </div>
-
-            <div class="form-group">
-                <input
-                    type="text"
-                    id="edit-author"
-                    class="form-control"
-                    placeholder="作者 (例如: WAHAHA)"
-                    value="WAHAHA"
-                />
-            </div>
-
-            <div class="form-group">
-                <textarea
-                    id="edit-abstract"
-                    class="form-control"
-                    rows="3"
-                    placeholder="文章摘要 (选填，留空则自动截取正文)"
-                ></textarea>
-            </div>
-
-            <div class="editor-container">
+            <div class="editor-split-view">
                 <div class="editor-pane">
                     <textarea
                         id="edit-content"
                         class="markdown-textarea"
-                        placeholder="开始使用 Markdown 写作..."
+                        placeholder="开始写作... (支持 Markdown)"
                     ></textarea>
                 </div>
                 <div class="preview-pane">
                     <div
                         id="markdown-preview"
-                        class="article-container"
-                        style="padding: 10px"
+                        class="article-container markdown-body"
                     ></div>
                 </div>
             </div>
+        </main>
+
+        <div id="empty-state" class="empty-state">
+            <i class="fa-regular fa-file-lines fa-3x"></i>
+            <p>选择一篇文章开始编辑，或点击“新建”</p>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="batch-modal" class="modal-overlay" style="display: none">
+    <div class="modal-content" style="width: 600px">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-floppy-disk"></i> 管理未保存的修改</h3>
+            <span class="close-btn" onclick="closeBatchModal()">&times;</span>
+        </div>
+
+        <div class="batch-toolbar">
+            <label
+                class="checkbox-label"
+                style="cursor: pointer; display: flex; align-items: center"
+            >
+                <input
+                    type="checkbox"
+                    id="batch-select-all"
+                    onchange="toggleBatchSelectAll()"
+                    style="margin-right: 8px; transform: scale(1.2)"
+                />
+                全选
+            </label>
+            <div class="batch-actions-group">
+                <button
+                    class="btn btn-sm btn-text-danger"
+                    onclick="batchDiscard()"
+                >
+                    <i class="fa-solid fa-rotate-left"></i> 放弃选中
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="batchSave()">
+                    <i class="fa-solid fa-save"></i> 保存选中
+                </button>
+            </div>
+        </div>
+
+        <div class="batch-list-container">
+            <ul id="batch-list" class="batch-list"></ul>
+        </div>
+
+        <div class="modal-footer">
+            <span style="font-size: 0.85rem; color: #999; margin-right: auto">
+                <i class="fa-solid fa-circle-info"></i>
+                放弃修改将回滚到上次保存的状态
+            </span>
+            <button class="btn btn-secondary" onclick="closeBatchModal()">
+                关闭
+            </button>
         </div>
     </div>
 </div>
 
 <style>
-    /* 按钮样式 */
+    :root {
+        --sidebar-width: 280px;
+        --header-height: 60px;
+        --primary-color: #49b1f5;
+        --success-color: #52c41a;
+        --warning-color: #faad14;
+        --danger-color: #ff4d4f;
+        --bg-gray: #f5f7f9;
+        --border-color: #e0e0e0;
+    }
+
+    /* 布局重置 */
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #fff;
+        font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    /* 隐藏原有模板内容 */
+    .page-header,
+    .layout-container {
+        display: none !important;
+    }
+
+    .admin-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    /* Header */
+    .admin-header {
+        height: var(--header-height);
+        background: #fff;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        z-index: 10;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    }
+    .brand-title {
+        margin: 0;
+        font-size: 1.2rem;
+        color: #333;
+    }
+    .header-right {
+        font-size: 0.9rem;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .btn-text {
+        text-decoration: none;
+        color: #666;
+        transition: color 0.3s;
+        cursor: pointer;
+    }
+    .btn-text:hover {
+        color: var(--primary-color);
+    }
+    .divider {
+        color: #ddd;
+    }
+
+    /* Container */
+    .admin-container {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: var(--sidebar-width);
+        background: var(--bg-gray);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+    }
+    .sidebar-header {
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    .article-list-container {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .article-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .article-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.2s;
+        position: relative;
+    }
+    .article-item:hover {
+        background: #fff;
+    }
+    .article-item.active {
+        background: #fff;
+        border-left: 4px solid var(--primary-color);
+    }
+    .item-title {
+        font-weight: bold;
+        font-size: 0.95rem;
+        color: #333;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .item-date {
+        font-size: 0.8rem;
+        color: #999;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* 状态指示 */
+    .article-item.dirty::after {
+        content: "";
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        background: var(--warning-color);
+        border-radius: 50%;
+        box-shadow: 0 0 4px rgba(250, 173, 20, 0.5);
+    }
+    .status-saved {
+        color: var(--success-color);
+    }
+    .status-unsaved {
+        color: var(--warning-color);
+    }
+    .badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.3);
+        color: #fff;
+        border-radius: 10px;
+        padding: 0 6px;
+        font-size: 0.75rem;
+        margin-left: 5px;
+    }
+
+    /* Editor */
+    .editor-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        z-index: 2;
+    }
+    .empty-state {
+        position: absolute;
+        top: 0;
+        left: var(--sidebar-width);
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #ccc;
+        z-index: 1;
+    }
+
+    /* Meta Bar */
+    .editor-meta-bar {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    .meta-inputs {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .input-title {
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        width: 100%;
+        outline: none;
+        background: transparent;
+    }
+    .meta-row {
+        display: flex;
+        gap: 10px;
+    }
+    .input-meta {
+        border: 1px solid #eee;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background: #f9f9f9;
+        transition: all 0.3s;
+    }
+    .input-meta:focus {
+        background: #fff;
+        border-color: var(--primary-color);
+    }
+    .meta-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .save-status-text {
+        font-size: 0.85rem;
+        color: #999;
+        margin-right: 10px;
+    }
+
+    /* Toolbar & Split View */
+    .editor-toolbar {
+        height: 40px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        background: #fafafa;
+        gap: 15px;
+    }
+    .toolbar-group {
+        display: flex;
+        gap: 5px;
+        border-right: 1px solid #eee;
+        padding-right: 15px;
+    }
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+    .editor-toolbar button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px 8px;
+        border-radius: 4px;
+        color: #666;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .editor-toolbar button:hover {
+        background: #e0e0e0;
+        color: #333;
+    }
+
+    .editor-split-view {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+    .editor-pane,
+    .preview-pane {
+        flex: 1;
+        overflow-y: auto;
+        height: 100%;
+    }
+    .editor-pane {
+        border-right: 1px solid var(--border-color);
+        background: #fff;
+    }
+    .preview-pane {
+        background: #fcfcfc;
+        padding: 20px 40px;
+    }
+    .markdown-textarea {
+        width: 100%;
+        height: 100%;
+        border: none;
+        padding: 20px;
+        resize: none;
+        outline: none;
+        font-family: "Consolas", monospace;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    /* Buttons */
     .btn {
-        padding: 8px 20px;
+        padding: 8px 16px;
         border-radius: 4px;
         border: none;
         cursor: pointer;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         transition: all 0.3s;
         color: #fff;
     }
@@ -152,316 +568,752 @@
         background: var(--primary-color);
     }
     .btn-primary:hover {
-        background: #ff7242;
-        box-shadow: 0 4px 10px rgba(255, 114, 66, 0.3);
+        opacity: 0.9;
+    }
+    .btn-warning {
+        background: var(--warning-color);
+        color: white;
+    }
+    .btn-warning:hover {
+        opacity: 0.9;
     }
     .btn-secondary {
-        background: #f0f0f0;
+        background: #e0e0e0;
         color: #666;
-        margin-right: 10px;
     }
     .btn-secondary:hover {
-        background: #e0e0e0;
+        background: #d0d0d0;
     }
-    .btn-danger {
+    .btn-danger-soft {
+        background: #fff1f0;
+        color: #ff4d4f;
+    }
+    .btn-danger-soft:hover {
         background: #ff4d4f;
+        color: #fff;
+    }
+    .btn-sm {
         padding: 5px 10px;
         font-size: 0.85rem;
     }
-    .btn-edit {
-        background: #49b1f5;
-        padding: 5px 10px;
-        font-size: 0.85rem;
-        margin-right: 5px;
+    .btn-text-danger {
+        background: none;
+        color: #ff4d4f;
+        border: 1px solid transparent;
+    }
+    .btn-text-danger:hover {
+        background: #fff1f0;
+        border-color: #ff4d4f;
     }
 
-    /* 表格样式 */
-    .table-container {
-        overflow-x: auto;
-    }
-    .admin-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
-    .admin-table th {
-        text-align: left;
-        padding: 15px;
-        background: #f9f9f9;
-        color: #666;
-        font-weight: bold;
-        border-bottom: 2px solid #eee;
-    }
-    .admin-table td {
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-        color: #444;
-    }
-    .admin-table tr:hover {
-        background: #fdfdfd;
-    }
-
-    /* 表单样式 */
-    .form-group {
-        margin-bottom: 15px;
-    }
-    .form-control {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 1rem;
-        outline: none;
-        transition: border 0.3s;
-        background: #fdfdfd;
-    }
-    .form-control:focus {
-        border-color: var(--primary-color);
-        background: #fff;
-    }
-    .title-input {
-        font-size: 1.5rem;
-        font-weight: bold;
-        height: 50px;
-    }
-
-    /* 编辑器分栏布局 */
-    .editor-container {
-        display: flex;
-        height: 600px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-top: 20px;
-    }
-    .editor-pane,
-    .preview-pane {
-        flex: 1;
-        overflow-y: auto;
-    }
-    .editor-pane {
-        border-right: 1px solid #ddd;
-        background: #fcfcfc;
-    }
-    .markdown-textarea {
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        border: none;
-        resize: none;
-        padding: 20px;
-        box-sizing: border-box;
-        font-family: "Consolas", monospace;
-        font-size: 1rem;
-        line-height: 1.6;
-        outline: none;
-        background: transparent;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s;
     }
-    .preview-pane {
-        background: #fff;
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 90%;
+        position: relative;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        max-height: 80vh;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 10px;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+    .close-btn {
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+    }
+    .modal-footer {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    /* Batch List */
+    .batch-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 0 5px;
+    }
+    .batch-actions-group {
+        display: flex;
+        gap: 10px;
+    }
+    .batch-list-container {
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        flex: 1;
+    }
+    .batch-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .batch-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+    }
+    .batch-item:last-child {
+        border-bottom: none;
+    }
+    .batch-item:hover {
+        background: #f9f9f9;
+    }
+    .batch-checkbox {
+        margin-right: 15px;
+        transform: scale(1.2);
+        cursor: pointer;
+    }
+    .batch-info {
+        flex: 1;
+    }
+    .batch-title {
+        font-weight: bold;
+        font-size: 0.95rem;
+        color: #333;
+    }
+    .batch-desc {
+        font-size: 0.8rem;
+        color: #999;
+    }
+    .btn-icon-danger {
+        color: #ff4d4f;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        transition: background 0.2s;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    .btn-icon-danger:hover {
+        background: #fff1f0;
+    }
+
+    /* Toast */
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .toast.show {
+        opacity: 1;
+    }
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
     }
 </style>
 
 <script>
     const CODE_SUCCESS = 0;
 
+    // --- 核心状态管理 ---
+    let articlesMeta = [];
+    const draftStore = new Map();
+    let currentId = null;
+
     document.addEventListener("DOMContentLoaded", () => {
-        loadList(); // 初始加载列表
+        loadArticleList();
+        setupEditorEvents();
+        setupNavigationGuard();
+    });
 
-        // 绑定 Markdown 实时预览
-        const textarea = document.getElementById("edit-content");
-        textarea.addEventListener("input", (e) => {
-            renderPreview(e.target.value);
+    // 1. 导航守卫
+    function setupNavigationGuard() {
+        window.addEventListener("beforeunload", (e) => {
+            if (hasUnsavedChanges()) {
+                e.preventDefault();
+                e.returnValue = "";
+            }
         });
-    });
+        document.body.addEventListener("click", (e) => {
+            const link = e.target.closest("a");
+            if (link) {
+                if (link.target === "_blank" || link.href.includes("#")) return;
+                if (hasUnsavedChanges()) {
+                    e.preventDefault();
+                    if (
+                        confirm(
+                            "当前有未保存的文章，跳转将丢失这些修改。\n\n是否确认放弃修改并跳转？",
+                        )
+                    ) {
+                        window.location.href = link.href;
+                    }
+                }
+            }
+        });
+    }
 
-    // 配置 Marked
-    marked.setOptions({
-        highlight: function (code, lang) {
-            const language = highlight.getLanguage(lang) ? lang : "plaintext";
-            return highlight.highlight(code, { language }).value;
-        },
-        breaks: true,
-        gfm: true,
-    });
-
-    // --- 视图切换逻辑  ---
-    function showEditor(article = null) {
-        document.getElementById("view-list").style.display = "none";
-        document.getElementById("view-editor").style.display = "block";
-
-        if (article) {
-            // 编辑模式
-            document.getElementById("editor-title").innerText = "编辑文章";
-            document.getElementById("edit-id").value = article.id;
-            document.getElementById("edit-title").value = article.title;
-            document.getElementById("edit-author").value = article.author;
-            document.getElementById("edit-abstract").value = article.abstract;
-            document.getElementById("edit-content").value = article.content;
-            renderPreview(article.content);
-        } else {
-            // 新建模式 - 清空表单
-            document.getElementById("editor-title").innerText = "新建文章";
-            document.getElementById("edit-id").value = "";
-            document.getElementById("edit-title").value = "";
-            document.getElementById("edit-abstract").value = "";
-            document.getElementById("edit-content").value = "";
-            renderPreview("");
+    function hasUnsavedChanges() {
+        for (let draft of draftStore.values()) {
+            if (draft.isDirty) return true;
         }
+        return false;
     }
 
-    function hideEditor() {
-        document.getElementById("view-editor").style.display = "none";
-        document.getElementById("view-list").style.display = "block";
-    }
+    // 2. 草稿与切换逻辑
+    async function switchArticle(rawId) {
+        const id = String(rawId);
+        if (currentId === id) return;
 
-    function renderPreview(markdown) {
-        document.getElementById("markdown-preview").innerHTML =
-            marked.parse(markdown);
-    }
+        if (currentId !== null) {
+            snapshotCurrentEditor();
+        }
 
-    // --- API 交互 (核心修改部分) ---
+        currentId = id;
 
-    // 1. 加载列表
-    async function loadList() {
-        try {
-            const res = await fetch("/api/list-articles?page=1&pagesize=100");
-            const resp = await res.json(); // 解析统一响应结构
+        renderSidebar();
+        document.getElementById("empty-state").style.display = "none";
+        document.getElementById("editor-area").style.visibility = "visible";
 
-            const tbody = document.getElementById("article-table-body");
-            tbody.innerHTML = "";
-            document.getElementById("loading-tip").style.display = "none";
-
-            // 判断业务状态码
-            if (resp.code !== CODE_SUCCESS) {
-                alert("加载失败: " + resp.msg);
-                return;
-            }
-
-            // 获取真正的数据列表
-            const list = resp.data || [];
-
-            if (list.length === 0) {
-                tbody.innerHTML =
-                    '<tr><td colspan="6" style="text-align:center">暂无数据</td></tr>';
-                return;
-            }
-
-            list.forEach((item) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${item.id}</td>
-                    <td><a href="/article/${item.id}" target="_blank" style="font-weight:bold;">${item.title}</a></td>
-                    <td>${item.author}</td>
-                    <td>${item.created_at ? item.created_at.substring(0, 10) : "-"}</td>
-                    <td>${item.view_count}</td>
-                    <td>
-                        <button class="btn btn-edit" onclick='fetchDetailAndEdit(${item.id})'><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-danger" onclick="deleteArticle(${item.id})"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+        if (draftStore.has(id)) {
+            fillEditor(draftStore.get(id));
+        } else if (id === "new") {
+            fillEditor({
+                id: "",
+                title: "",
+                author: "WAHAHA",
+                abstract: "",
+                content: "",
             });
-        } catch (e) {
-            console.error(e);
-            alert("网络请求异常");
+        } else {
+            await fetchAndLoadArticle(id);
         }
     }
 
-    // 2. 获取详情并进入编辑
-    async function fetchDetailAndEdit(id) {
+    function snapshotCurrentEditor() {
+        const title = document.getElementById("edit-title").value;
+        const content = document.getElementById("edit-content").value;
+        const draft = {
+            id: document.getElementById("edit-id").value,
+            title: title,
+            author: document.getElementById("edit-author").value,
+            abstract: document.getElementById("edit-abstract").value,
+            content: content,
+            isDirty: isDraftDirty(currentId),
+        };
+        draftStore.set(currentId, draft);
+        updateManageButton();
+    }
+
+    function isDraftDirty(id) {
+        if (!draftStore.has(id)) return false;
+        return draftStore.get(id).isDirty;
+    }
+
+    async function fetchAndLoadArticle(rawId) {
+        const id = String(rawId);
+        document.getElementById("editor-area").style.opacity = "0.5";
         try {
             const res = await fetch(`/api/get-article?id=${id}`);
             const resp = await res.json();
-
-            if (resp.code !== CODE_SUCCESS) {
-                alert(resp.msg);
-                return;
+            if (resp.code === CODE_SUCCESS) {
+                const article = resp.data;
+                article.isDirty = false;
+                draftStore.set(id, article);
+                fillEditor(article);
+            } else {
+                showToast(resp.msg);
             }
+        } catch (e) {
+            showToast("加载失败");
+        }
+        document.getElementById("editor-area").style.opacity = "1";
+    }
 
-            // 数据在 resp.data 中
-            showEditor(resp.data);
+    // 3. UI & Sidebar
+    async function loadArticleList() {
+        try {
+            const res = await fetch("/api/list-articles?page=1&pagesize=100");
+            const resp = await res.json();
+            if (resp.code === CODE_SUCCESS) {
+                articlesMeta = resp.data || [];
+                renderSidebar();
+            }
         } catch (e) {
             console.error(e);
-            alert("获取详情失败");
+        }
+        document.getElementById("sidebar-loading").style.display = "none";
+    }
+
+    function renderSidebar() {
+        const ul = document.getElementById("article-list");
+        ul.innerHTML = "";
+
+        if (currentId === "new" || draftStore.has("new")) {
+            const isDirty =
+                draftStore.has("new") && draftStore.get("new").isDirty;
+            const li = document.createElement("li");
+            li.className = `article-item ${currentId === "new" ? "active" : ""} ${isDirty ? "dirty" : ""}`;
+            li.onclick = () => switchArticle("new");
+            li.innerHTML = `<div class="item-title">${draftStore.get("new")?.title || "新建文章"}</div><div class="item-date">草稿</div>`;
+            ul.appendChild(li);
+        }
+
+        articlesMeta.forEach((item) => {
+            const itemIdStr = String(item.id);
+            const isDirty =
+                draftStore.has(itemIdStr) && draftStore.get(itemIdStr).isDirty;
+            const li = document.createElement("li");
+            li.className = `article-item ${itemIdStr === currentId ? "active" : ""} ${isDirty ? "dirty" : ""}`;
+            li.onclick = () => switchArticle(itemIdStr);
+            const dateStr = item.created_at
+                ? item.created_at.substring(5, 10)
+                : "";
+            li.innerHTML = `
+                <div class="item-title">${item.title || "(无标题)"}</div>
+                <div class="item-date"><span>${dateStr}</span> <span>${item.author}</span></div>
+            `;
+            ul.appendChild(li);
+        });
+
+        updateManageButton();
+    }
+
+    function createNewArticle() {
+        switchArticle("new");
+    }
+
+    // 4. Editor Logic
+    function fillEditor(data) {
+        document.getElementById("edit-id").value = data.id || "";
+        document.getElementById("edit-title").value = data.title || "";
+        document.getElementById("edit-author").value = data.author || "WAHAHA";
+        document.getElementById("edit-abstract").value = data.abstract || "";
+        document.getElementById("edit-content").value = data.content || "";
+
+        document.getElementById("btn-delete").style.display =
+            data.id && data.id !== "new" ? "inline-flex" : "none";
+
+        updateEditorStatus(data.isDirty);
+        renderPreview(data.content || "");
+    }
+
+    function setupEditorEvents() {
+        const inputs = [
+            "edit-title",
+            "edit-author",
+            "edit-abstract",
+            "edit-content",
+        ];
+        inputs.forEach((id) => {
+            document.getElementById(id).addEventListener("input", (e) => {
+                if (currentId !== null) {
+                    if (!draftStore.has(currentId)) {
+                        snapshotCurrentEditor();
+                    }
+                    const draft = draftStore.get(currentId);
+                    draft.isDirty = true;
+                    if (id === "edit-title") draft.title = e.target.value;
+                    if (id === "edit-content") {
+                        draft.content = e.target.value;
+                        renderPreview(e.target.value);
+                    }
+                    updateEditorStatus(true);
+                    renderSidebar();
+                }
+            });
+        });
+
+        // 监听文件导入
+        document
+            .getElementById("file-import-input")
+            .addEventListener("change", function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // 覆盖检查
+                const currentContent =
+                    document.getElementById("edit-content").value;
+                if (currentContent && currentContent.trim() !== "") {
+                    if (
+                        !confirm(
+                            "导入文件将覆盖当前编辑器的所有内容，是否继续？",
+                        )
+                    ) {
+                        this.value = ""; // 重置 Input
+                        return;
+                    }
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const text = e.target.result;
+                    const textarea = document.getElementById("edit-content");
+                    textarea.value = text;
+                    // 触发 input 事件以更新预览和草稿状态
+                    textarea.dispatchEvent(new Event("input"));
+                    showToast("文件导入成功");
+                };
+                reader.readAsText(file);
+                this.value = ""; // 重置 Input，允许再次导入相同文件
+            });
+
+        document.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+                e.preventDefault();
+                saveCurrentArticle();
+            }
+        });
+
+        const ep = document.querySelector(".editor-pane");
+        const pp = document.querySelector(".preview-pane");
+        ep.addEventListener("scroll", () => {
+            const pct = ep.scrollTop / (ep.scrollHeight - ep.offsetHeight);
+            pp.scrollTop = pct * (pp.scrollHeight - pp.offsetHeight);
+        });
+    }
+
+    function updateEditorStatus(isDirty) {
+        const el = document.getElementById("current-save-status");
+        if (isDirty) {
+            el.innerText = "未保存";
+            el.style.color = "var(--warning-color)";
+        } else {
+            el.innerText = "已保存";
+            el.style.color = "#999";
         }
     }
 
-    // 3. 保存 (新增或更新)
-    async function saveArticle() {
-        const id = document.getElementById("edit-id").value;
-        const title = document.getElementById("edit-title").value;
-        const content = document.getElementById("edit-content").value;
-        const author = document.getElementById("edit-author").value;
-        const abstract = document.getElementById("edit-abstract").value;
+    // 5. Batch Manager
+    function updateManageButton() {
+        const dirty = getDirtyDrafts();
+        const btn = document.getElementById("btn-manage-unsaved");
+        const countBadge = document.getElementById("unsaved-count");
+        const globalStatus = document.getElementById("global-status");
 
-        if (!title || !content) {
-            alert("标题和内容不能为空");
+        if (dirty.length > 0) {
+            btn.style.display = "inline-flex";
+            countBadge.innerText = dirty.length;
+            globalStatus.className = "status-unsaved";
+            globalStatus.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 有 ${dirty.length} 篇未保存`;
+        } else {
+            btn.style.display = "none";
+            globalStatus.className = "status-saved";
+            globalStatus.innerHTML =
+                '<i class="fa-solid fa-check"></i> 所有更改已保存';
+        }
+    }
+
+    function getDirtyDrafts() {
+        const dirty = [];
+        for (let [id, draft] of draftStore.entries()) {
+            if (draft.isDirty) dirty.push({ ...draft, id: id });
+        }
+        return dirty;
+    }
+
+    function openBatchManager() {
+        const listEl = document.getElementById("batch-list");
+        listEl.innerHTML = "";
+        const dirtyDrafts = getDirtyDrafts();
+
+        if (dirtyDrafts.length === 0) {
+            closeBatchModal();
+            showToast("没有需要保存的修改");
             return;
         }
 
-        const data = {
-            title,
-            content,
-            author,
-            abstract,
-        };
+        dirtyDrafts.forEach((draft) => {
+            const li = document.createElement("li");
+            li.className = "batch-item";
+            const title = draft.title || "(无标题)";
+            const isNew = !draft.id || draft.id === "new";
+            const desc = isNew ? "新建文章" : `ID: ${draft.id}`;
 
+            li.innerHTML = `
+                <input type="checkbox" class="batch-checkbox" value="${draft.id}">
+                <div class="batch-info">
+                    <div class="batch-title">${title}</div>
+                    <div class="batch-desc">${desc}</div>
+                </div>
+                <div class="batch-item-actions">
+                    <button class="btn-icon-danger" title="放弃修改" onclick="discardSingle('${draft.id}')">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            `;
+            listEl.appendChild(li);
+        });
+
+        document.getElementById("batch-select-all").checked = false;
+        document.getElementById("batch-modal").style.display = "flex";
+    }
+
+    function closeBatchModal() {
+        document.getElementById("batch-modal").style.display = "none";
+    }
+
+    function toggleBatchSelectAll() {
+        const checked = document.getElementById("batch-select-all").checked;
+        document
+            .querySelectorAll(".batch-checkbox")
+            .forEach((cb) => (cb.checked = checked));
+    }
+
+    function getSelectedBatchIds() {
+        return Array.from(
+            document.querySelectorAll(".batch-checkbox:checked"),
+        ).map((cb) => cb.value);
+    }
+
+    async function batchDiscard() {
+        const ids = getSelectedBatchIds();
+        if (ids.length === 0) {
+            alert("请先选择要放弃的文章");
+            return;
+        }
+        if (
+            !confirm(
+                `确定要放弃这 ${ids.length} 篇文章的修改吗？\n此操作将回滚到上次保存的状态。`,
+            )
+        )
+            return;
+
+        ids.forEach((id) => performDiscard(id));
+        showToast(`已放弃 ${ids.length} 篇文章的修改`);
+        refreshAfterBatchAction();
+    }
+
+    function discardSingle(id) {
+        if (!confirm("确定要放弃此文章的修改吗？")) return;
+        performDiscard(id);
+        refreshAfterBatchAction();
+    }
+
+    function performDiscard(id) {
+        draftStore.delete(id);
+        if (currentId == id) {
+            if (id === "new") {
+                fillEditor({
+                    id: "",
+                    title: "",
+                    author: "WAHAHA",
+                    abstract: "",
+                    content: "",
+                });
+            } else {
+                fetchAndLoadArticle(id);
+            }
+        }
+    }
+
+    async function batchSave() {
+        const ids = getSelectedBatchIds();
+        if (ids.length === 0) {
+            alert("请先选择要保存的文章");
+            return;
+        }
+
+        const btn = document.querySelector("#batch-modal .btn-primary");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+        btn.disabled = true;
+
+        const promises = ids.map((id) => sendSaveRequest(draftStore.get(id)));
+        const results = await Promise.all(promises);
+        const successCount = results.filter((r) => r).length;
+
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        if (successCount === ids.length) {
+            showToast("选中文章已全部保存");
+            ids.forEach((id) => {
+                const draft = draftStore.get(id);
+                if (draft) draft.isDirty = false;
+            });
+            if (ids.includes("new")) {
+                draftStore.delete("new");
+                await loadArticleList();
+                if (currentId === "new") {
+                    currentId = null;
+                    document.getElementById("empty-state").style.display =
+                        "flex";
+                    document.getElementById("editor-area").style.visibility =
+                        "hidden";
+                }
+            } else {
+                if (currentId && ids.includes(currentId)) {
+                    updateEditorStatus(false);
+                }
+            }
+            refreshAfterBatchAction();
+        } else {
+            alert(
+                `部分保存失败。成功: ${successCount}, 失败: ${ids.length - successCount}`,
+            );
+            refreshAfterBatchAction();
+        }
+    }
+
+    function refreshAfterBatchAction() {
+        renderSidebar();
+        if (getDirtyDrafts().length === 0) {
+            closeBatchModal();
+        } else {
+            openBatchManager();
+        }
+    }
+
+    // 6. Save & Delete
+    async function saveCurrentArticle() {
+        if (!currentId) return;
+        snapshotCurrentEditor();
+        const draft = draftStore.get(currentId);
+
+        if (!draft.title || !draft.content) {
+            showToast("标题和内容不能为空");
+            return;
+        }
+
+        const success = await sendSaveRequest(draft);
+        if (success) {
+            showToast("保存成功");
+            draft.isDirty = false;
+            updateEditorStatus(false);
+            if (currentId === "new") {
+                draftStore.delete("new");
+                await loadArticleList();
+                currentId = null;
+                document.getElementById("empty-state").style.display = "flex";
+                document.getElementById("editor-area").style.visibility =
+                    "hidden";
+            } else {
+                renderSidebar();
+            }
+        }
+    }
+
+    async function sendSaveRequest(data) {
+        if (!data) return false;
         let url = "/api/create-article";
-        let method = "POST";
+        const payload = { ...data };
 
-        if (id) {
+        if (payload.id && payload.id !== "new") {
             url = "/api/update-article";
-            data.id = parseInt(id);
+            payload.id = parseInt(payload.id);
+        } else {
+            delete payload.id;
         }
 
         try {
             const res = await fetch(url, {
-                method: method,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
-
-            // 这里先尝试解析 JSON，因为即使后端报错也是返回 JSON
             const resp = await res.json();
-
-            if (resp.code === CODE_SUCCESS) {
-                alert("保存成功");
-                hideEditor();
-                loadList(); // 刷新列表
-            } else {
-                // 显示后端返回的错误信息 (msg)
-                alert("保存失败: " + resp.msg);
-            }
+            return resp.code === CODE_SUCCESS;
         } catch (e) {
-            console.error(e);
-            alert("网络错误");
+            return false;
         }
     }
 
-    // 4. 删除
-    async function deleteArticle(id) {
-        if (!confirm("确定要删除这篇文章吗？此操作不可恢复。")) return;
-
+    async function handleDelete() {
+        if (!confirm("确定删除吗？")) return;
         try {
-            const res = await fetch(`/api/delete-article?id=${id}`, {
+            const res = await fetch(`/api/delete-article?id=${currentId}`, {
                 method: "DELETE",
-                headers: { "Content-Type": "application/json" },
             });
-
             const resp = await res.json();
-
             if (resp.code === CODE_SUCCESS) {
-                // alert('删除成功');
-                loadList();
+                showToast("删除成功");
+                draftStore.delete(currentId);
+                currentId = null;
+                document.getElementById("empty-state").style.display = "flex";
+                document.getElementById("editor-area").style.visibility =
+                    "hidden";
+                loadArticleList();
             } else {
-                alert("删除失败: " + resp.msg);
+                showToast("删除失败");
             }
         } catch (e) {
-            console.error(e);
-            alert("网络错误");
+            showToast("请求错误");
         }
+    }
+
+    // Utils
+    function insertMarkdown(prefix, suffix) {
+        const textarea = document.getElementById("edit-content");
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selection = text.substring(start, end);
+        textarea.value =
+            text.substring(0, start) +
+            prefix +
+            selection +
+            suffix +
+            text.substring(end);
+        textarea.focus();
+        textarea.selectionStart = start + prefix.length;
+        textarea.selectionEnd = start + prefix.length + selection.length;
+        textarea.dispatchEvent(new Event("input"));
+    }
+
+    function renderPreview(md) {
+        if (typeof marked !== "undefined") {
+            document.getElementById("markdown-preview").innerHTML =
+                marked.parse(md);
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 3000);
     }
 </script>
 {{end}}

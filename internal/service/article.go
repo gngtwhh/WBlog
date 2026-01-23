@@ -56,9 +56,7 @@ func (svc *ArticleService) GetArticle(id int64) (model.Article, error) {
 }
 
 func (svc *ArticleService) Create(article *model.Article) error {
-	if article.Abstract == "" {
-		article.Abstract = article.Content[:100]
-	}
+	svc.ensureAbstract(article)
 	err := svc.repo.Create(article)
 	if err != nil {
 		svc.log.Error("failed to create article", "title", article.Title, "err", err)
@@ -68,6 +66,7 @@ func (svc *ArticleService) Create(article *model.Article) error {
 }
 
 func (svc *ArticleService) Update(article *model.Article) error {
+	svc.ensureAbstract(article)
 	err := svc.repo.Update(article)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -89,4 +88,17 @@ func (svc *ArticleService) Delete(id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (svc *ArticleService) ensureAbstract(article *model.Article) {
+	if article.Abstract != "" {
+		return
+	}
+	const summaryLen = 100
+	contentRunes := []rune(article.Content)
+	if len(contentRunes) > summaryLen {
+		article.Abstract = string(contentRunes[:summaryLen]) + "..."
+	} else {
+		article.Abstract = article.Content
+	}
 }
