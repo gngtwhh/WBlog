@@ -30,11 +30,12 @@ type DatabaseConfig struct {
 }
 
 type AppConfig struct {
-	TemplateDir   string `json:"template_dir"`
-	StaticDir     string `json:"static_dir"`
-	LogFile       string `json:"log_file"`
-	JwtSecret     string `json:"jwt_secret"`
-	JwtExpireTime string `json:"jwt_expire_time"`
+	TemplateDir        string `json:"template_dir"`
+	StaticDir          string `json:"static_dir"`
+	LogFile            string `json:"log_file"`
+	JwtSecret          string `json:"jwt_secret"`
+	JwtExpireTime      string `json:"jwt_expire_time"`
+	SensitiveWordsFile string `json:"sensitive_words_file"`
 }
 
 func (cfg *Config) GetJwtDuration() time.Duration {
@@ -67,6 +68,9 @@ func Load(filePath string) error {
 	}
 	if _, err := time.ParseDuration(cfg.App.JwtExpireTime); err != nil {
 		return fmt.Errorf("The format of the JWT expiration time is incorrect")
+	}
+	if cfg.App.SensitiveWordsFile == "" {
+		return fmt.Errorf("sensitive words file is empty")
 	}
 
 	Cfg = cfg

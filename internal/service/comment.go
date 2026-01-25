@@ -5,21 +5,26 @@ import (
 
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/repository"
+	"github.com/gngtwhh/WBlog/pkg/sensitive"
 )
 
 type CommentService struct {
-	repo repository.CommentRepository
-	log  *slog.Logger
+	repo     repository.CommentRepository
+	acFilter *sensitive.ACFilter
+	log      *slog.Logger
 }
 
-func NewCommentService(repo repository.CommentRepository, logger *slog.Logger) *CommentService {
+func NewCommentService(repo repository.CommentRepository, acFilter *sensitive.ACFilter, logger *slog.Logger) *CommentService {
 	return &CommentService{
-		repo: repo,
-		log:  logger.With("component", "comment_service"),
+		repo:     repo,
+		acFilter: acFilter,
+		log:      logger.With("component", "comment_service"),
 	}
 }
 
 func (s *CommentService) Create(comment *model.Comment) error {
+	// TODO: should send err to frontend
+	comment.Content = s.acFilter.Filter(comment.Content)
 	if err := s.repo.Create(comment); err != nil {
 		s.log.Error("failed to create comment",
 			"uid", comment.UserID, "articleid", comment.ArticleID, "err", err)

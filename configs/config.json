@@ -12,6 +12,7 @@
     "static_dir": "./web/static/",
     "log_file": "./logs/blog.log",
     "jwt_secret": "test_secret",
-    "jwt_expire_time": "24h"
+    "jwt_expire_time": "24h",
+    "sensitive_words_file": "./configs/sensitive_words.txt"
   }
 }

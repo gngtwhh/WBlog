@@ -1,9 +1,12 @@
 package app
 
 import (
+	"bufio"
 	"html/template"
 	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/handler"
@@ -12,6 +15,7 @@ import (
 	"github.com/gngtwhh/WBlog/internal/router"
 	"github.com/gngtwhh/WBlog/internal/service"
 	"github.com/gngtwhh/WBlog/pkg/logger"
+	"github.com/gngtwhh/WBlog/pkg/sensitive"
 	"github.com/gngtwhh/WBlog/pkg/utils"
 )
 
@@ -21,6 +25,7 @@ type Server struct {
 }
 
 func NewServer() (h *Server) {
+	// log setup
 	log := logger.Setup(&logger.Options{
 		Level:     slog.LevelDebug,
 		FilePath:  config.Cfg.App.LogFile,
@@ -35,10 +40,30 @@ func NewServer() (h *Server) {
 		),
 	)
 
+	// utils
+	// jwt
 	if err := utils.InitJwt(config.Cfg.App.JwtSecret); err != nil {
 		log.Error("failed to init jwt pkg", "err", err)
 		panic(err)
 	}
+	// sensitive words filter
+	file, err := os.Open(config.Cfg.App.SensitiveWordsFile)
+	if err != nil {
+		log.Error("failed to load sensitive words file", "err", err)
+		panic(err)
+	}
+	defer file.Close()
+
+	var words []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		word := strings.TrimSpace(scanner.Text())
+		if word != "" {
+			words = append(words, word)
+		}
+	}
+	acFilter := sensitive.NewACFilter()
+	acFilter.Build(words)
 
 	// init repository
 	log.Info("initializing database...")
@@ -55,7 +80,7 @@ func NewServer() (h *Server) {
 	// init Services
 	articleService := service.NewArticleService(articleRepo, log)
 	userService := service.NewUserService(userRepo, log)
-	commentService := service.NewCommentService(commentRepo, log)
+	commentService := service.NewCommentService(commentRepo, acFilter, log)
 
 	// init handler
 	app := &handler.App{
