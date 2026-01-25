@@ -14,6 +14,7 @@ type Config struct {
 	Server   ServerConfig   `json:"server"`
 	Database DatabaseConfig `json:"database"`
 	App      AppConfig      `json:"app"`
+	Cache    CacheConfig    `json:"cache"`
 }
 
 type ServerConfig struct {
@@ -36,6 +37,11 @@ type AppConfig struct {
 	JwtSecret          string `json:"jwt_secret"`
 	JwtExpireTime      string `json:"jwt_expire_time"`
 	SensitiveWordsFile string `json:"sensitive_words_file"`
+}
+
+type CacheConfig struct {
+	RedisAddr     string `json:"redis_addr"`
+	RedisPassword string `json:"redis_password"`
 }
 
 func (cfg *Config) GetJwtDuration() time.Duration {

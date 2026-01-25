@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gngtwhh/WBlog/internal/cache"
 	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/handler"
 	"github.com/gngtwhh/WBlog/internal/render"
@@ -64,6 +65,12 @@ func NewServer() (h *Server) {
 	}
 	acFilter := sensitive.NewACFilter()
 	acFilter.Build(words)
+
+	// init redis cache
+	if err := cache.InitRedis(config.Cfg.Cache.RedisAddr, config.Cfg.Cache.RedisPassword); err != nil {
+		log.Error("init cache failed", "err", err)
+		panic(err)
+	}
 
 	// init repository
 	log.Info("initializing database...")
