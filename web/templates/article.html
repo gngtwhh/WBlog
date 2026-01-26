@@ -449,9 +449,30 @@
         document.getElementById("user-panel").style.display = "none";
     }
 
-    function logout() {
-        removeToken();
-        setGuestState();
+    async function logout() {
+        const token = getToken(); // 如果本地没有 token，直接清空状态即可，不用发请求
+        if (!token) {
+            removeToken();
+            setGuestState();
+            return;
+        }
+
+        try {
+            // 发送 POST 请求到后端注销接口
+            await fetch("/api/user/logout", {
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer " + token,
+                },
+            });
+        } catch (e) {
+            console.warn("Logout request failed:", e);
+            // 即使网络请求失败，本地也应该强制退出，保证用户体验
+        } finally {
+            // 无论请求成功与否，都要清除本地数据并重置 UI
+            removeToken();
+            setGuestState();
+        }
     }
 
     async function loadArticleDetail(id) {

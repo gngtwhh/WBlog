@@ -211,3 +211,25 @@ func (h *UserHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, publicInfo)
 }
+
+func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	tokenStr, ok := middleware.GetTokenRaw(r)
+	if !ok {
+		response.Fail(w, errcode.TokenInvalid)
+		return
+	}
+
+	exp, ok := middleware.GetClaimsExp(r)
+	if !ok {
+		response.Fail(w, errcode.TokenInvalid)
+		return
+	}
+
+	if err := h.svc.Logout(tokenStr, exp); err != nil {
+		response.Fail(w, errcode.ServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{Name: "token", MaxAge: -1, Path: "/"})
+	response.Success(w, nil)
+}

@@ -45,6 +45,7 @@ func LoadRouters(app *handler.App, logger *slog.Logger) http.Handler {
 		router.HandleFunc("POST /api/user/update", middleware.Auth(app.User.UpdateProfile))
 		router.HandleFunc("POST /api/user/update-password", middleware.Auth(app.User.UpdatePassword))
 		router.HandleFunc("POST /api/user/upload-avatar", middleware.Auth(app.User.UploadAvatar))
+		router.HandleFunc("POST /api/user/logout", middleware.Auth(app.User.Logout))
 	}
 
 	// comment api

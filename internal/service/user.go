@@ -1,10 +1,13 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
+	"time"
 
+	"github.com/gngtwhh/WBlog/internal/cache"
 	"github.com/gngtwhh/WBlog/internal/config"
 	"github.com/gngtwhh/WBlog/internal/model"
 	"github.com/gngtwhh/WBlog/internal/repository"
@@ -147,6 +150,23 @@ func (svc *UserService) ChangePassword(userID uint64, oldPassword, newPassword s
 
 	if err := svc.repo.Update(user); err != nil {
 		svc.log.Error("failed to update password", "uid", user.ID, "err", err)
+		return err
+	}
+	return nil
+}
+
+func (svc *UserService) Logout(tokenStr string, exp int64) error {
+	now := time.Now()
+	expTime := time.Unix(exp, 0)
+	if now.After(expTime) {
+		return nil
+	}
+	duration := expTime.Sub(now)
+
+	key := cache.PrefixJWTBlacklist + tokenStr
+	err := cache.RDB.Set(context.Background(), key, "1", duration).Err()
+	if err != nil {
+		svc.log.Error("failed to add token to blacklist", "key", key, "err", err)
 		return err
 	}
 	return nil
